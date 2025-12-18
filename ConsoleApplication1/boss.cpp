@@ -52,8 +52,15 @@ extern Player player;
 extern Boss boss;
 
 void Boss::SpawnSwordWallHorizontal(bool fromLeft) {
-    int totalSwords = 12; // 剑的总数
-    int spacing = 60;     // 剑之间的间隔
+    printf("横剑\n");
+	// 先定义一下画横剑的参数,startX,vx, angle,这都是好直接确定的
+    float startX = fromLeft ? -100.0f : WINDOW_W + 100.0f; // 从左还是从右，初始坐标
+    float vx = fromLeft ? 11.0f : -11.0f; // 对应的速度方向
+    float angle = fromLeft ? 0.0f : 3.14159f;
+
+    // 现在我们要算y的分布了
+    int totalSwords = 12; // 定义多少把剑
+    int spacing = 70;     // 剑之间的间隔多大,注意我们的主角是40格宽,65格高的
 
     int gapA = rand() % totalSwords;
     int gapB = rand() % totalSwords;
@@ -61,24 +68,18 @@ void Boss::SpawnSwordWallHorizontal(bool fromLeft) {
 
     // 确保缺口不会生成在太高或太低的位置，保留上下边界
     int gapStart = 1;
-    int randomOffset = (rand() % 50) - 25; // 在 Y 轴方向整体上下浮动 -25 到 +25 像素
+    int randomOffset = (rand() % 50) - 40; // 在 Y 轴方向整体上下浮动 -25 到 +25 像素
 
-    float startX = fromLeft ? -100.0f : WINDOW_W + 100.0f; // 从左还是从右，初始坐标
-    float vx = fromLeft ? 10.0f : -10.0f; // 对应的速度方向
-    float angle = fromLeft ? 0.0f : 3.14159f;
-
-    for (int i = 0; i < 12; i++) {
+    for (int i = 0; i < totalSwords; i++) {
         if (i >= gapStart && (i == gapA || i == gapB || i == gapC)) continue;
         // 分布在Y轴上，覆盖玩家可能跳跃的高度
-        float py = PLATFORM_Y - 50 - (i * spacing) + randomOffset;
-
-        if (py > PLATFORM_Y - 10) continue;
-
+        float py = PLATFORM_Y  - (i * spacing) + randomOffset;
         projectiles.push_back(new Sword(startX, py, vx, 0, angle, false));
     }
 }
 
 void Boss::SpawnSwordWallVertical() {
+    printf("竖剑\n");
     int totalSwords = 20;
     float spacing = 60.0f;
     int gapStart = 2;
@@ -118,6 +119,7 @@ void Boss::SpawnOrbs() {
 }
 
 void Boss::SpawnBeam() {
+    printf("光柱\n");
     bool fromLeft = rand() % 2 == 0;
     float startX = fromLeft ? -100.0f : WINDOW_W + 100.0f;
     float spd = fromLeft ? 10.0f : -10.0f;
@@ -125,6 +127,7 @@ void Boss::SpawnBeam() {
 }
 
 void Boss::SpawnSwordBurst() {
+    printf("脸刺\n");
     int count = 12; // 保持 12 根
     float startRadius = 60.0f;
 
@@ -211,7 +214,16 @@ void Boss::BossAI() {
     // 基础攻击间隔
     if (currentTime - lastAttackTime > 2000) {
         lastAttackTime = currentTime;
-        int attackType = rand() % 5; // 增加到 5 种随机情况
+        
+		// 避免连续出现同一种攻击
+        static int lastAttack = -1;
+        int attackType;
+        do {
+            attackType = rand() % 5;
+        } while (attackType == lastAttack);
+        lastAttack = attackType;
+
+        printf("[AI] pick attackType = %d\n", attackType);
 
         // 光球攻击
         if (attackType == 0) {

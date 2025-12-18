@@ -42,7 +42,7 @@ int main() {
     }
     mciSendString(L"play bgm repeat", NULL, 0, NULL);
 
-    srand((unsigned int)time(0));
+    srand((unsigned int)time(NULL));
     BeginBatchDraw();
     setbkcolor(COLOR_BG);
 

@@ -106,8 +106,6 @@ void DrawPlatform() {
     // 注意：y 坐标 +4，但高度保持一致，这样底部也会覆盖住底板（因为底板也是圆角，重叠起来刚好）
     solidroundrect(PLATFORM_X, PLATFORM_Y + 4, PLATFORM_X + PLATFORM_W, PLATFORM_Y + PLATFORM_H, r, r);
 
-    // 3. 增加随机质感 (限制范围以避开圆角区域)
-    srand(12345);
     int padding = 10; // 纹理向内缩进，防止画到圆角外面
 
     for (int i = 0; i < 300; i++) {
@@ -142,10 +140,6 @@ void DrawPlatform() {
     //setfillcolor(NULL); // 不填充，只画框
     roundrect(PLATFORM_X, PLATFORM_Y + 4, PLATFORM_X + PLATFORM_W, PLATFORM_Y + PLATFORM_H, r, r);
     setfillstyle(BS_SOLID);
-
-    srand((unsigned int)time(0)); // 还原随机种子
-
-    srand((unsigned int)time(0)); // 还原随机种子给Boss逻辑用
 }
 
 void SpikeManager(DWORD gameStartTime) {

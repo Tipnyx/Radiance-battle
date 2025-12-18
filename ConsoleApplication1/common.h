@@ -25,13 +25,11 @@ const float MOVE_SPEED = 5.0f;
 const float JUMP_FORCE = -12.0f;
 const float DASH_SPEED = 15.0f;
 
-
 const int ORB_ATTACK_TOTAL = 3;    // 一次攻击发射3个
 const int ORB_ATTACK_INTERVAL = 1500; // 每1.5秒发射一个
 
-
 const int SWORD_ATTACK_TOTAL = 3; //一次三波
-const int SWORD_ATTACK_INTERVAL = 1250; //每1.25秒发射一波
+const int SWORD_ATTACK_INTERVAL = 1500; //每1.5秒发射一波
 
 const int TOTAL_BURST_WAVES = 2; // 总共两波
 
@@ -39,19 +37,19 @@ extern bool debug_mode; // 全局调试开关
 
 // --- 地刺相关常量与变量 ---
 enum SpikeState { SPIKE_HIDDEN, SPIKE_WARNING, SPIKE_ACTIVE };
-
 extern SpikeState currentSpikeState;
 extern bool spikeOnLeft;            // 当前在哪一侧
 extern DWORD spikeTimer;               // 用于计算状态持续时间的状态计时器
-extern DWORD gameGlobalTime;           // 记录游戏开始时间
-
 const int TIME_TO_START_SPIKES = 15000; // 15秒后开始
 const int DURATION_WARNING = 2000;      // 预警持续 2秒
 const int DURATION_ACTIVE = 8000;       // 攻击持续 8秒 (总共10秒一轮)
 
+extern DWORD gameGlobalTime;           // 记录游戏开始时间
+
 // 结构体：简单的矩形碰撞箱
 struct Rect {
     float x, y, w, h; // x,y是矩形的左上角坐标
+    // AABB碰撞检测
     bool checkCollision(const Rect& other) {
         return x < other.x + other.w && x + w > other.x &&
             y < other.y + other.h && y + h > other.y;

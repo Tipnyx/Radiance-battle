@@ -6,7 +6,7 @@ class Player {
 public:
     float x, y;
     float vx, vy;
-    int w = 30, h = 50;
+    int w = 40, h = 65;
     bool onGround = false;
     int facing = 1; // 1 Right, -1 Left
 
