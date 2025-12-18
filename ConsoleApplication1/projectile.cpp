@@ -311,3 +311,120 @@ void Beam::draw() {
     setfillcolor(WHITE);
     solidrectangle((int)(x + w / 2 - 2), 0, (int)(x + w / 2 + 2), WINDOW_H);
 }
+
+
+// --- projectile.cpp ---
+
+// ... 在文件末尾添加 Laser 的实现 ...
+
+Laser::Laser(float _cx, float _cy, float _angle) {
+    cx = _cx; cy = _cy;
+    angle = _angle;
+    x = cx; y = cy; // 兼容基类坐标
+    type = 3;       // 设定为 3号类型 (Laser)
+    active = true;
+    stateStartTime = GetTickCount();
+    currentWidth = 2.0f; // 初始预警线宽度
+}
+
+void Laser::update(Player& p) {
+    DWORD now = GetTickCount();
+    float timeInState = (now - stateStartTime) / 1000.0f;
+
+    // --- 状态机 ---
+    if (state == LASER_PREPARE) {
+        // 预警阶段 (0.7秒)：细线，跟随 Boss (如果需要 Boss 移动时激光跟着动，在这里更新 cx, cy)
+        currentWidth = 3.0f + sin(now / 50.0f) * 2.0f; // 微微闪烁
+
+        if (timeInState > 0.7f) {
+            state = LASER_FIRE;
+            stateStartTime = now;
+            // 播放发射音效（如果有）
+        }
+    }
+    else if (state == LASER_FIRE) {
+        // 爆发阶段 (0.5秒)：瞬间变粗，造成伤害
+        // 宽度做一个弹性的动画：瞬间撑大，然后微缩
+        if (timeInState < 0.1f) currentWidth = 60.0f * (timeInState / 0.1f);
+        else currentWidth = 50.0f;
+
+        if (timeInState > 0.5f) {
+            state = LASER_FADE;
+            stateStartTime = now;
+        }
+    }
+    else if (state == LASER_FADE) {
+        // 消失阶段 (0.3秒)：快速变细
+        currentWidth = 50.0f * (1.0f - (timeInState / 0.3f));
+        if (timeInState > 0.3f) active = false;
+    }
+}
+
+void Laser::draw() {
+    // 计算激光终点
+    float ex = cx + cos(angle) * length;
+    float ey = cy + sin(angle) * length;
+
+    // 构建多边形顶点（利用垂直向量扩宽）
+    float w = currentWidth / 2.0f;
+    float nx = -sin(angle) * w;
+    float ny = cos(angle) * w;
+
+    POINT pts[4];
+    pts[0] = { (long)(cx + nx), (long)(cy + ny) }; // 起点左
+    pts[1] = { (long)(ex + nx), (long)(ey + ny) }; // 终点左
+    pts[2] = { (long)(ex - nx), (long)(ey - ny) }; // 终点右
+    pts[3] = { (long)(cx - nx), (long)(cy - ny) }; // 起点右
+
+    if (state == LASER_PREPARE) {
+        setlinecolor(RGB(255, 200, 100)); // 橙色预警线
+        setlinestyle(PS_SOLID, 2);
+        line((int)cx, (int)cy, (int)ex, (int)ey);
+    }
+    else if (state == LASER_FIRE) {
+        // 1. 绘制宽大的光辉（半透明感）
+        setfillcolor(RGB(255, 255, 180));
+        solidpolygon(pts, 4);
+
+        // 2. 绘制核心白光 (稍微细一点)
+        float cw = currentWidth / 4.0f;
+        float cnx = -sin(angle) * cw;
+        float cny = cos(angle) * cw;
+        POINT cpts[4] = {
+            { (long)(cx + cnx), (long)(cy + cny) }, { (long)(ex + cnx), (long)(ey + cny) },
+            { (long)(ex - cnx), (long)(ey - cny) }, { (long)(cx - cnx), (long)(cy - cny) }
+        };
+        setfillcolor(WHITE);
+        solidpolygon(cpts, 4);
+    }
+    else if (state == LASER_FADE) {
+        setfillcolor(RGB(255, 220, 150));
+        solidpolygon(pts, 4);
+    }
+}
+
+std::vector<POINT> Laser::getHitPoints() {
+    std::vector<POINT> points;
+    // 只有 FIRE 状态才有伤害
+    if (state != LASER_FIRE) return points;
+
+    // 沿着激光轴线每隔 30 像素取一个点作为判定点
+    // 这样比写复杂的多边形碰撞要省事且高效
+    for (float d = 0; d < length; d += 30.0f) {
+        if (d > 1000 && d > length) break; // 简单优化
+        points.push_back({
+            (long)(cx + cos(angle) * d),
+            (long)(cy + sin(angle) * d)
+            });
+    }
+    return points;
+}
+
+void Laser::drawDebug() {
+    if (!debug_mode) return;
+    setlinecolor(MAGENTA);
+    auto pts = getHitPoints();
+    for (auto& p : pts) {
+        circle(p.x, p.y, (int)(currentWidth / 2));
+    }
+}

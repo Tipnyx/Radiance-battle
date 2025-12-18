@@ -40,6 +40,11 @@ public:
     std::vector<TrailPoint> trails; // 存储拖尾坐标
     const int MAX_TRAILS = 10;      // 拖尾长度
 
+    // 三连激光状态变量
+    bool laserAttackActive = false;
+    int laserWaveCount = 0;
+    DWORD lastLaserTime = 0;
+
     Boss();
     void update();
     void draw();
@@ -49,6 +54,7 @@ public:
     void SpawnOrbs();
     void SpawnBeam();
     void SpawnSwordBurst();
+    void SpawnLaserBurst(); 
     void BossAI();
 };
 

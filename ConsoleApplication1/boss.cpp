@@ -237,6 +237,26 @@ void Boss::SpawnSwordBurst() {
     }
 }
 
+// 三连激光
+void Boss::SpawnLaserBurst() {
+    printf("三连激光 - 第 %d 波\n", laserWaveCount + 1);
+
+    // 计算指向玩家的基础角度
+    float dx = (player.x + player.w / 2) - x;
+    float dy = (player.y + player.h / 2) - y;
+    float baseAngle = atan2(dy, dx);
+
+    // 扇形发射 3 条：中心、左偏 25度、右偏 25度
+    float offsets[] = { 0.0f, -0.43f, 0.43f }; // 0.43弧度 ≈ 25度
+
+    // 为了增加难度，每一波加一点随机偏移
+    float randomOffset = ((rand() % 20) - 10) * 0.01f;
+
+    for (int i = 0; i < 3; i++) {
+        projectiles.push_back(new Laser(x, y, baseAngle + offsets[i] + randomOffset));
+    }
+}
+
 // Boss AI逻辑
 void Boss::BossAI() {
 
@@ -305,6 +325,25 @@ void Boss::BossAI() {
         return;
     }
 
+    // --- 激光三连射逻辑 ---
+    if (laserAttackActive) {
+        DWORD elapsed = currentTime - lastLaserTime;
+
+        // 节奏：每隔 800ms 射一波 (预警0.7s + 爆发0.5s，所以波次间要有重叠才刺激)
+        if (elapsed > 800 && laserWaveCount < 3) {
+            SpawnLaserBurst();
+            lastLaserTime = currentTime;
+            laserWaveCount++;
+        }
+
+        // 三波射完后，多留点时间给最后的一波消失
+        if (laserWaveCount >= 3 && elapsed > 1500) {
+            laserAttackActive = false;
+            lastAttackTime = currentTime; // 结束攻击
+        }
+        return; // 激光期间独占 AI
+    }
+
     // 基础攻击间隔
     if (currentTime - lastAttackTime > 2000) {
         lastAttackTime = currentTime;
@@ -313,18 +352,18 @@ void Boss::BossAI() {
         static int lastAttack = -1;
         int attackType;
 
-        // --- 核心逻辑修改：每 5 次攻击固定位移一次 ---
+        // --- 核心逻辑修改：每 3 次攻击固定位移一次 ---
         attackCycle++; // 每次进入攻击选择，计数加 1
 
         if (attackCycle >= 3) {
-            // 达到第 5 次，强制执行位移 (attackType 5)
-            attackType = 5;
+            // 达到第 3 次，强制执行位移 (attackType 5)
+            attackType = 6;
             attackCycle = 0; // 重置计数器
         }
         else {
-            // 前 4 次，在 0-4 招式之间随机（不含 5）
+            // 前 3 次，在 0-5 招式之间随机（不含 6）
             do {
-                attackType = rand() % 5;
+                attackType = rand() % 6;
             } while (attackType == lastAttack);
         }
 
@@ -359,11 +398,17 @@ void Boss::BossAI() {
             burstWaveCount = 0;
             lastBurstTime = GetTickCount();
         }
-        else if (attackType == 5) {
+        else if (attackType == 5) { // 新增：三连激光
+            laserAttackActive = true;
+            laserWaveCount = 0;
+            lastLaserTime = currentTime - 1000; // 这里的减法是为了让第一波立即发射
+        }
+        else if (attackType == 6) {
             targetX = WINDOW_W * (rand() % 3 + 1) / 4; // 计算目标四分点
             isTeleporting = true; // 开启位移状态
             printf("[AI] Teleport to targetX = %f\n", targetX);
         }
+        
     }
 
 }

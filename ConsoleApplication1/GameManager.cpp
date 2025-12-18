@@ -79,6 +79,21 @@ void ProjectileManager() {
                     }
                 }
             }
+            else if (projectiles[i]->type == 3) { // Laser
+                // 强转为 Laser 指针
+                Laser* laser = (Laser*)projectiles[i];
+                // 获取采样点
+                std::vector<POINT> pts = laser->getHitPoints();
+
+                // 遍历所有点进行圆形碰撞检测
+                for (auto p : pts) {
+                    if (p.x >= pRect.x && p.x <= pRect.x + pRect.w &&
+                        p.y >= pRect.y && p.y <= pRect.y + pRect.h) {
+                        playerHit = true; break;
+                    }
+                }
+            }
+
             else { // 光球或光束：标准矩形判定
                 Rect bRect = projectiles[i]->getRect();
                 if (pRect.checkCollision(bRect)) playerHit = true;
@@ -86,7 +101,6 @@ void ProjectileManager() {
                     pogoHit = true;
                 }
             }
-
 
             // --- B. 统一处理碰撞后果 ---
             // 1. 处理下劈弹起
