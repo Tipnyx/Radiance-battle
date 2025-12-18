@@ -2,14 +2,18 @@
 # include"projectile.h"
 # include"player.h"
 
+extern std::vector<Projectile*> projectiles;
+extern Player player;
+extern Boss boss;
+
 Boss::Boss() {
         x = WINDOW_W / 2;
-        y = 500; // 悬浮在空中
+        y = 250; // 悬浮在空中
     }
 
 void Boss::update() {
     // 简单的悬浮律动 (正弦波)
-    y = 200 + sin(GetTickCount() / 500.0f) * 20;
+    y = 250 + sin(GetTickCount() / 500.0f) * 20;
 }
 
 void Boss::draw() {
@@ -17,38 +21,65 @@ void Boss::draw() {
 
     int cx = (int)x;
     int cy = (int)y;
+    int r = 150;
+    // 1. 旋转背景
 
-    // --- 绘制辐光本体 (简化版：发光大飞蛾) ---
-    // 1. 底层金光 (放射状)
-    for (int i = 0; i < 8; i++) {
-		float angle = i * 3.1415f / 4.0f + (GetTickCount() / 1000.0f); //45度的间隔,随时间旋转(通过时间偏移实现)
-        setlinecolor(RGB(255, 255, 150));
-        setlinestyle(PS_SOLID, 7);
-        line(cx, cy, cx + (int)(cos(angle) * 120), cy + (int)(sin(angle) * 120));
+    for (int j = 0; j < 3; j++) {
+        setlinecolor(RGB(240, 240, 240));
+        setlinestyle(PS_SOLID, 5);
+        setfillcolor(NULL);
+        circle(cx, cy, 90 + 30 * j);
     }
 
-    // 2. 身体核心 (白色)
-    setfillcolor(WHITE);
-    solidellipse(cx - 25, cy - 40, cx + 25, cy + 40);
+    for (int i = 0; i < 8; i++) {
+           
+        float angle = i * 3.1415f / 4.0f + (GetTickCount() / 1000.0f); //45度的间隔,随时间旋转(通过时间偏移实现)
+        int ex = cx + (int)(cos(angle) * r);
+        int ey = cy + (int)(sin(angle) * r);
+        
+        setlinecolor(RGB(255, 255, 220));
+        setlinestyle(PS_SOLID, 11+ (rand() % 3));
+        line(cx, cy, ex, ey);
+        
+        setlinecolor(RGB(204, 218, 221));
+        setlinestyle(PS_SOLID, 9);
+        line(cx, cy, ex, ey);
+        
+        // --- 末端尖刺逻辑 ---
+        float spikeLen = 45.0f;    // 尖刺从末端往外延伸的长度
+        float spikeWidth = 18.0f;  // 尖刺底部的宽度（一半）
+        float baseR = r - 10.0f;   // 尖刺底座的位置（稍微缩进光束一点，衔接更自然）
 
-    // 3. 巨大的羽翼 (淡黄色)
-    setfillcolor(RGB(255, 255, 230));
-    // 左翼
-    POINT leftWing[] = { {cx - 20, cy}, {cx - 100, cy - 60}, {cx - 80, cy + 40} };
-    solidpolygon(leftWing, 3);
-    // 右翼
-    POINT rightWing[] = { {cx + 20, cy}, {cx + 100, cy - 60}, {cx + 80, cy + 40} };
-    solidpolygon(rightWing, 3);
+        POINT pts[3];
+        // 尖刺顶点：在 angle 方向延伸
+        pts[0].x = cx + (int)((baseR + spikeLen) * cos(angle));
+        pts[0].y = cy + (int)((baseR + spikeLen) * sin(angle));
 
-    // 4. 发光的眼睛
-    setfillcolor(RGB(255, 100, 0)); // 经典的感染橙
-    solidcircle(cx - 8, cy - 15, 5);
-    solidcircle(cx + 8, cy - 15, 5);
+        // 尖刺底边左角：利用垂直向量 (-sin, cos) 进行偏移
+        pts[1].x = cx + (int)(baseR * cos(angle) - spikeWidth * sin(angle));
+        pts[1].y = cy + (int)(baseR * sin(angle) + spikeWidth * cos(angle));
+
+        // 尖刺底边右角：利用垂直向量 (sin, -cos) 进行偏移
+        pts[2].x = cx + (int)(baseR * cos(angle) + spikeWidth * sin(angle));
+        pts[2].y = cy + (int)(baseR * sin(angle) - spikeWidth * cos(angle));
+
+        // 填充颜色：使用稍微亮一点的米白色，制造立体感
+        setfillcolor(RGB(255, 255, 240));
+        solidpolygon(pts, 3);
+
+    }
+
+    // 2. 主体像个太阳
+    for (int i = 0; i < 90; i++) {
+        setfillcolor(RGB(255, 192 - i, 107 - i));
+        solidellipse(cx - 90+i, cy - 90+i, cx + 90-i, cy + 90-i);
+    }
+    setfillcolor(NULL);
+	setlinecolor(RGB(255, 112, 17));
+	setlinestyle(PS_SOLID, 3);
+	circle(cx, cy, 90 + (rand() % 3)); // 微微抖动的边框
+
 }
-
-extern std::vector<Projectile*> projectiles;
-extern Player player;
-extern Boss boss;
 
 void Boss::SpawnSwordWallHorizontal(bool fromLeft) {
     printf("横剑\n");
@@ -219,7 +250,7 @@ void Boss::BossAI() {
         static int lastAttack = -1;
         int attackType;
         do {
-            attackType = rand() % 5;
+            attackType = rand() % 6;
         } while (attackType == lastAttack);
         lastAttack = attackType;
 
@@ -253,6 +284,9 @@ void Boss::BossAI() {
             burstAttackActive = true;
             burstWaveCount = 0;
             lastBurstTime = GetTickCount();
+        }
+        else if (attackType == 5) {
+			x = WINDOW_W * (rand()%3+1) / 4; // 随机横向位置,在四分之N处（N=1,2,3)
         }
     }
 
