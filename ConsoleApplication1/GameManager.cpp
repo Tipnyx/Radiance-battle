@@ -54,7 +54,7 @@ void ProjectileManager() {
             bool pogoHit = false;   // 是否被玩家下劈
 
             // --- 根据弹幕类型执行不同的判定算法 ---
-            if (projectiles[i]->type == 1) { // 如果是长剑
+            if (projectiles[i]->type == 1) { // 如果是长剑,我是不去理会碰撞箱的!
 				Sword* sw = (Sword*)projectiles[i]; // 转换为剑指针
 				if (sw->state == SWORD_LAUNCH) { // 只有发射状态才有伤害判定
 					auto hitPts = sw->getHitPoints(); // 获取剑的多个判定点

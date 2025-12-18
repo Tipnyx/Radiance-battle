@@ -2,10 +2,9 @@
 # include"projectile.h"
 # include"player.h"
 
-// Force recompile
 Boss::Boss() {
         x = WINDOW_W / 2;
-        y = 200; // 悬浮在空中
+        y = 500; // 悬浮在空中
     }
 
 void Boss::update() {
@@ -22,9 +21,9 @@ void Boss::draw() {
     // --- 绘制辐光本体 (简化版：发光大飞蛾) ---
     // 1. 底层金光 (放射状)
     for (int i = 0; i < 8; i++) {
-        float angle = i * 3.1415f / 4.0f + (GetTickCount() / 1000.0f);
+		float angle = i * 3.1415f / 4.0f + (GetTickCount() / 1000.0f); //45度的间隔,随时间旋转(通过时间偏移实现)
         setlinecolor(RGB(255, 255, 150));
-        setlinestyle(PS_SOLID, 2);
+        setlinestyle(PS_SOLID, 7);
         line(cx, cy, cx + (int)(cos(angle) * 120), cy + (int)(sin(angle) * 120));
     }
 
@@ -80,8 +79,8 @@ void Boss::SpawnSwordWallHorizontal(bool fromLeft) {
 
 void Boss::SpawnSwordWallVertical() {
     printf("竖剑\n");
-    int totalSwords = 20;
-    float spacing = 60.0f;
+	int totalSwords = 20; // 定义多少把剑
+	float spacing = 75.0f; // 剑之间的间隔多大
     int gapStart = 2;
 
     int gapA = rand() % totalSwords;
@@ -95,11 +94,12 @@ void Boss::SpawnSwordWallVertical() {
     for (int i = 0; i < 15; i++) {
         if (i >= gapStart && (i == gapA || i == gapB || i == gapC)) continue; // gap跳过
         float px = startXBase + randomOffset + (i * spacing);
-        projectiles.push_back(new Sword(px, -150.0f, 0, 15.0f, 1.5708f, false));
+        projectiles.push_back(new Sword(px, -120.0f, 0, 15.0f, 1.5708f, false));
     }
 }
 
 void Boss::SpawnOrbs() {
+    printf("光球\n");
     const float minDist = 200.0f; //最小距离
     float ox, oy;
     int tryCount = 0;

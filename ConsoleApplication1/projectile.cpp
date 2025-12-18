@@ -161,22 +161,22 @@ Sword::Sword(float startX, float startY, float _vx, float _vy, float _angle, boo
     // 根据波次决定弧线方向，产生交错旋转感
     // 或者简单给一个固定值。0.01f 左右是比较自然的弧线
     if (isCurve) {
-        curveRate = 0.015f;
+        curveRate = 0.01f;
     }
 }
 
 std::vector<POINT> Sword::getHitPoints() {
     std::vector<POINT> points;
-    float len = 150.0f; // 剑身长度
+    float len = w; // 剑身长度
     float cosA = cos(angle);
     float sinA = sin(angle);
 
-    // 在剑身上均匀分布 4 个点：剑柄、1/3、2/3、剑尖
-    for (float i = 0; i <= 1.0f; i += 0.33f) {
+    // 在剑身上均匀分布 9 个点
+    for (float i = 0; i <= 1.0f; i += 0.11f) {
         float dist = i * len;
         points.push_back({
-            (long)(x + dist * cosA),
-            (long)(y + dist * sinA)
+            (long)(x + dist * cosA), // 画个斜着的杠杠,然后找个点,你自己算一算它的坐标就知道了
+            (long)(y + dist * sinA) //很简单的,高中数学
             });
     }
     return points;
@@ -188,7 +188,9 @@ void Sword::drawDebug(){
     setlinecolor(RED);
     // 依然画出矩形框作为参考
     Rect r = getRect();
-    rectangle((int)r.x, (int)r.y, (int)(r.x + r.w), (int)(r.y + r.h));
+
+	//稍微调整一下矩形框的位置,让它更贴合剑身,你问我为什么?你自己算一算就知道了
+    rectangle((int)r.x - sin(angle)* (0.5*h), (int)r.y + cos(angle) * (0.5*h), (int)(r.x + r.w), (int)(r.y + r.h));
 
     // 画出实际生效的红色判定点
     setfillcolor(RED);
@@ -270,6 +272,7 @@ void Sword::draw(){
 Rect Sword::getRect(){
     // 预览阶段没有伤害判定，防止生成时直接杀掉玩家
     if (state == SWORD_PREVIEW) return { -1000, -1000, 0, 0 };
+
     float absCos = fabsf(cos(angle));
     float absSin = fabsf(sin(angle));
     float newW = 150 * absCos + 14 * absSin;
