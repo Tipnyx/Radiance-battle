@@ -6,14 +6,27 @@ extern std::vector<Projectile*> projectiles;
 extern Player player;
 extern Boss boss;
 
+// 将颜色根据 alpha 进行亮度缩放，模拟渐显
+COLORREF Fade(COLORREF c, float a) {
+    return RGB(GetRValue(c) * a, GetGValue(c) * a, GetBValue(c) * a);
+}
+
 Boss::Boss() {
         x = WINDOW_W / 2;
-        y = 250; // 悬浮在空中
+        y = -50; // 悬浮在空中
     }
 
 void Boss::update() {
+    if (alpha < 1.0f) {
+        alpha += 0.0033f; //调整这个值控制进场速度，0.005约等于3-4秒
+        y += 1.0f;
+        
+    }
+    else{
+        y = 250 + sin(GetTickCount() / 500.0f) * 20;
+    }
     // 简单的悬浮律动 (正弦波)
-    y = 250 + sin(GetTickCount() / 500.0f) * 20;
+    
 }
 
 void Boss::draw() {
@@ -25,7 +38,7 @@ void Boss::draw() {
     // 1. 旋转背景
 
     for (int j = 0; j < 3; j++) {
-        setlinecolor(RGB(240, 240, 240));
+        setlinecolor(Fade(RGB(240, 240, 240),alpha));
         setlinestyle(PS_SOLID, 5);
         setfillcolor(NULL);
         circle(cx, cy, 90 + 30 * j);
@@ -37,11 +50,11 @@ void Boss::draw() {
         int ex = cx + (int)(cos(angle) * r);
         int ey = cy + (int)(sin(angle) * r);
         
-        setlinecolor(RGB(255, 255, 220));
+        setlinecolor(Fade(RGB(255, 255, 220),alpha));
         setlinestyle(PS_SOLID, 11+ (rand() % 3));
         line(cx, cy, ex, ey);
         
-        setlinecolor(RGB(204, 218, 221));
+        setlinecolor(Fade(RGB(204, 218, 221),alpha));
         setlinestyle(PS_SOLID, 9);
         line(cx, cy, ex, ey);
         
@@ -64,18 +77,18 @@ void Boss::draw() {
         pts[2].y = cy + (int)(baseR * sin(angle) - spikeWidth * cos(angle));
 
         // 填充颜色：使用稍微亮一点的米白色，制造立体感
-        setfillcolor(RGB(255, 255, 240));
+        setfillcolor(Fade(RGB(255, 255, 240),alpha));
         solidpolygon(pts, 3);
 
     }
 
     // 2. 主体像个太阳
     for (int i = 0; i < 90; i++) {
-        setfillcolor(RGB(255, 192 - i, 107 - i));
+        setfillcolor(Fade(RGB(255, 192 - i, 107 - i),alpha));
         solidellipse(cx - 90+i, cy - 90+i, cx + 90-i, cy + 90-i);
     }
     setfillcolor(NULL);
-	setlinecolor(RGB(255, 112, 17));
+	setlinecolor(Fade(RGB(255, 112, 17),alpha));
 	setlinestyle(PS_SOLID, 3);
 	circle(cx, cy, 90 + (rand() % 3)); // 微微抖动的边框
 
@@ -183,6 +196,11 @@ void Boss::SpawnSwordBurst() {
 
 // Boss AI逻辑
 void Boss::BossAI() {
+    if (alpha < 1.0f) {
+        lastAttackTime = GetTickCount();
+        return;
+    }
+    
     DWORD currentTime = GetTickCount();
 
     // 处理环形剑连发逻辑
