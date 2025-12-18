@@ -1,6 +1,11 @@
 #pragma once
 # include"common.h"
 
+struct TrailPoint {
+    float x, y;
+    float alpha;
+};
+
 class Boss {
 public:
     float x, y;
@@ -26,6 +31,14 @@ public:
     bool burstAttackActive = false;
     int burstWaveCount = 0;         // 已生成的波数
     DWORD lastBurstTime = 0;        // 上一波生成的起始时间
+
+    int attackCycle = 0; // 新增：记录当前是第几次攻击
+
+    // 拖尾变量
+    float targetX;             // 目标位置
+    bool isTeleporting = false; // 是否正在位移
+    std::vector<TrailPoint> trails; // 存储拖尾坐标
+    const int MAX_TRAILS = 10;      // 拖尾长度
 
     Boss();
     void update();

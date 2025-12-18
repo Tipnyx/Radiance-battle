@@ -17,21 +17,64 @@ Boss::Boss() {
     }
 
 void Boss::update() {
+    //入场效果
     if (alpha < 1.0f) {
         alpha += 0.0033f; //调整这个值控制进场速度，0.005约等于3-4秒
         y += 1.0f;
         
     }
+    // 终止位置
     else{
         y = 250 + sin(GetTickCount() / 500.0f) * 20;
     }
     // 简单的悬浮律动 (正弦波)
+
+    // 2. 新增：平滑水平位移逻辑
+    if (isTeleporting) {
+        // 使用 Lerp 公式：当前位置 += (目标 - 当前) * 速度因子
+        // 0.15f 这个值越大，移动越快；越小，拖尾越长越慢
+        x += (targetX - x) * 0.15f;
+
+        // 记录当前位置到拖尾数组
+        TrailPoint p = { x, y, alpha };
+        trails.push_back(p);
+        if (trails.size() > MAX_TRAILS) {
+            trails.erase(trails.begin()); // 保持长度
+        }
+
+        // 如果距离目标足够近，结束位移并清空拖尾（可选渐隐）
+        if (fabs(x - targetX) < 0.5f) {
+            x = targetX;
+            isTeleporting = false;
+        }
+    }
+    else {
+        // 如果没在位移，慢慢清空拖尾，让拖尾自然消失
+        if (!trails.empty()) {
+            trails.erase(trails.begin());
+        }
+    }
     
 }
 
 void Boss::draw() {
     if (!active) return;
 
+    // --- 新增：绘制拖尾残影 ---
+    for (size_t i = 0; i < trails.size(); i++) {
+        // 越靠前的残影越透明
+        float trailAlpha = (i / (float)trails.size()) * alpha * 0.4f;
+        int tx = (int)trails[i].x;
+        int ty = (int)trails[i].y;
+
+        // 这里只需要画一个简化的太阳主体作为残影，否则性能消耗太大
+        for (int k = 0; k < 60; k += 10) {
+            setfillcolor(Fade(RGB(255, 180 - k, 100 - k), trailAlpha));
+            solidcircle(tx, ty, 80 - k);
+        }
+    }
+
+	// --- 正常绘制 Boss 本体 ---
     int cx = (int)x;
     int cy = (int)y;
     int r = 150;
@@ -196,6 +239,8 @@ void Boss::SpawnSwordBurst() {
 
 // Boss AI逻辑
 void Boss::BossAI() {
+
+	// 入场未完成，暂停攻击逻辑
     if (alpha < 1.0f) {
         lastAttackTime = GetTickCount();
         return;
@@ -267,10 +312,21 @@ void Boss::BossAI() {
 		// 避免连续出现同一种攻击
         static int lastAttack = -1;
         int attackType;
-        do {
-            attackType = rand() % 6;
-        } while (attackType == lastAttack);
-        lastAttack = attackType;
+
+        // --- 核心逻辑修改：每 5 次攻击固定位移一次 ---
+        attackCycle++; // 每次进入攻击选择，计数加 1
+
+        if (attackCycle >= 3) {
+            // 达到第 5 次，强制执行位移 (attackType 5)
+            attackType = 5;
+            attackCycle = 0; // 重置计数器
+        }
+        else {
+            // 前 4 次，在 0-4 招式之间随机（不含 5）
+            do {
+                attackType = rand() % 5;
+            } while (attackType == lastAttack);
+        }
 
         printf("[AI] pick attackType = %d\n", attackType);
 
@@ -304,7 +360,9 @@ void Boss::BossAI() {
             lastBurstTime = GetTickCount();
         }
         else if (attackType == 5) {
-			x = WINDOW_W * (rand()%3+1) / 4; // 随机横向位置,在四分之N处（N=1,2,3)
+            targetX = WINDOW_W * (rand() % 3 + 1) / 4; // 计算目标四分点
+            isTeleporting = true; // 开启位移状态
+            printf("[AI] Teleport to targetX = %f\n", targetX);
         }
     }
 
