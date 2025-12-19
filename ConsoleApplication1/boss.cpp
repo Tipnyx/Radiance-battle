@@ -12,6 +12,24 @@ COLORREF Fade(COLORREF c, float a) {
     return RGB(GetRValue(c) * a, GetGValue(c) * a, GetBValue(c) * a);
 }
 
+// 二阶段 Boss 可以瞬移的锚点 (X, Y)
+// 这些坐标参考了你在 world.cpp 里生成的台阶位置
+// 建议 Y 坐标比台阶高 100-150 像素，让 Boss 悬浮在台阶上方
+struct BossAnchor {
+    float x, y;
+};
+
+// 预设的瞬移点列表 (根据你的 GenerateStairs 数据推算的)
+std::vector<BossAnchor> phaseTwoAnchors = {
+
+    {500, 200 - 150},
+    {120, 50 - 150},
+    {800, 0 - 150},
+    {480, -300 - 150},
+    {0, -200 - 150},
+    {980, -280 - 150}
+};
+
 Boss::Boss() {
         x = WINDOW_W / 2;
         y = -100; // 悬浮在空中
@@ -23,20 +41,38 @@ void Boss::update() {
     //入场效果
     if (alpha < 1.0f) {
         alpha += 0.0033f; //调整这个值控制进场速度，0.005约等于3-4秒
-        y += 1.0f;
+        
+        if (!isPhaseTwoActive) {
+            y += 1.0f;
+        }
+        return;
         
     }
-    // 终止位置
-    else{
-        y = 200 + sin(GetTickCount() / 500.0f) * 20;
-    }
+
     // 简单的悬浮律动 (正弦波)
+
+    // 2. 悬浮律动逻辑 (修改！)
+    // 如果是二阶段，我们希望它在 targetY 附近律动，而不是死板的 200
+    float hoverBaseY = isPhaseTwoActive ? targetY : 200.0f;
+
+    // 计算悬浮偏移量
+    float hoverOffset = sin(GetTickCount() / 500.0f) * 20;
 
     // 平滑水平位移逻辑
     if (isTeleporting) {
         // 使用 Lerp 公式：当前位置 += (目标 - 当前) * 速度因子
         // 0.15f 这个值越大，移动越快；越小，拖尾越长越慢
         x += (targetX - x) * 0.10f;
+
+        // --- 新增：Y 轴平滑移动 ---
+        // 只有二阶段才需要大幅度垂直移动
+        if (isPhaseTwoActive) {
+            y += (targetY - y) * 0.10f;
+        }
+        else {
+            // 一阶段还是保持原来的悬浮逻辑
+            y = 200 + hoverOffset;
+        }
 
         // 记录当前位置到拖尾数组
         TrailPoint p = { x, y, alpha };
@@ -45,17 +81,45 @@ void Boss::update() {
             trails.erase(trails.begin()); // 保持长度
         }
 
-        // 如果距离目标足够近，结束位移并清空拖尾（可选渐隐）
-        if (fabs(x - targetX) < 0.5f) {
+        // 判定到达目标
+        // 二阶段需要同时判断 X 和 Y 都到了
+        float dist = sqrt(pow(x - targetX, 2) + pow(y - targetY, 2));
+        if (dist < 2.0f) { // 稍微放宽一点判断
             x = targetX;
+            if (isPhaseTwoActive) y = targetY; // 修正 Y
             isTeleporting = false;
         }
     }
     else {
-        // 如果没在位移，慢慢清空拖尾，让拖尾自然消失
-        if (!trails.empty()) {
-            trails.erase(trails.begin());
+        // 非位移状态下的悬浮
+        if (isPhaseTwoActive) {
+            // 二阶段：在当前位置悬浮
+            y = targetY + hoverOffset;
         }
+        else {
+            // 一阶段：固定高度悬浮
+            y = 200 + hoverOffset;
+        }
+
+        // 清空拖尾 (保持不变)
+        if (!trails.empty()) trails.erase(trails.begin());
+        
+    }
+
+    // --- 二阶段复活判定 ---
+    // 条件：Boss是隐藏的 + 处于攀爬阶段 + 二阶段还没正式激活 + 玩家爬得够高了
+    // 假设你的最后一个台阶大概在 y = -300 左右，那玩家跳到 y < -400 就触发
+    if (!active && PhaseTwo && !isPhaseTwoActive && player.y < -200) {
+        active = true;           // 1. 显示 Boss
+        isPhaseTwoActive = true; // 2. 标记二阶段战斗正式开始
+        hp = 500;                // 3. 重置血量 (随你定)
+        x = WINDOW_W / 2;        // 4. 初始位置：屏幕中间
+        y = -600;                // 5. 初始高度：在玩家头顶出现
+        alpha = 0.0f;            // 6. 重新开始淡入动画
+
+        // 这里可以重置一下瞬移状态，防止刚出来就乱飞
+        isTeleporting = false;
+        phaseTwoTargetIndex = -1;
     }
 
     // --- 死亡转场逻辑 ---
@@ -245,10 +309,13 @@ void Boss::SpawnSwordWallHorizontal(bool fromLeft) {
 
     int randomOffset = (rand() % 50) - 30; // 在 Y 轴方向整体上下浮动 -25 到 +25 像素
 
+    float baseY = isPhaseTwoActive ? this->y : PLATFORM_Y;
+    if (isPhaseTwoActive) baseY += 100;
+
     for (int i = 0; i < totalSwords; i++) {
         if ((i == gapA || i == gapB || i == gapC || i == gapD)) continue;
         // 分布在Y轴上，覆盖玩家可能跳跃的高度
-        float py = PLATFORM_Y  - (i * spacing) + randomOffset;
+        float py = baseY - (totalSwords * spacing / 2.0f) + (i * spacing) + randomOffset;
         projectiles.push_back(new Sword(startX, py, vx, 0, angle, false));
     }
 }
@@ -371,45 +438,6 @@ void Boss::BossAI() {
     
     DWORD currentTime = GetTickCount();
 
-    if (PhaseTwo) {
-        return;
-    }
-
-    // --- 三阶段触发判定 ---
-    if (hp <= 200 && !isFinalPhase) {
-        isFinalPhase = true;
-
-        // 1. 清空所有正在进行的旧攻击状态
-        orbAttackActive = false;
-        swordAttackActive = false;
-        burstAttackActive = false;
-        laserAttackActive = false;
-
-        // 2. 强行回归中心点
-        targetX = WINDOW_W / 2.0f;
-        isTeleporting = true;
-
-        // 3. 强行修改地刺逻辑 (我们可以直接修改全局变量)
-        currentSpikeState = SPIKE_ACTIVE;
-        // 这里我们可以稍微改一下 SpikeManager，让它支持“全屏两边刺”
-        return;
-    }
-
-    // --- 三阶段疯狂模式逻辑 ---
-    if (isFinalPhase) {
-        // 锁定位置：防止位移结束后再次触发随机位移
-        if (!isTeleporting) x = WINDOW_W / 2.0f;
-
-        // 持续使用垂直剑雨，缩短间隔
-        static DWORD lastFinalSwordTime = 0;
-        if (currentTime - lastFinalSwordTime > 900) { // 0.8秒一波，非常密集
-            SpawnSwordWallVertical();
-            lastFinalSwordTime = currentTime;
-        }
-        return; // 拦截后续的老 AI 逻辑
-    }
-
-
     // 处理环形剑连发逻辑
     if (burstAttackActive) {
         // 计算当前大招已经进行了多久
@@ -490,6 +518,53 @@ void Boss::BossAI() {
         return; // 激光期间独占 AI
     }
 
+    // =========================================================
+    //  第二部分：大脑决策 (决定下一步干什么)
+    // =========================================================
+
+    // --- 如果是二阶段，决策权交给 PhaseTwoAI ---
+    if (isPhaseTwoActive) {
+        PhaseTwoAI(); // 委托给二阶段 AI 处理
+        return;       // 只要在二阶段，就不跑后面的一阶段逻辑
+    }
+
+    // --- 攀爬阶段休息 ---
+    if (PhaseTwo) {return;}
+
+    // --- 三阶段触发判定 ---
+    if (hp <= 200 && !isFinalPhase) {
+        isFinalPhase = true;
+
+        // 1. 清空所有正在进行的旧攻击状态
+        orbAttackActive = false;
+        swordAttackActive = false;
+        burstAttackActive = false;
+        laserAttackActive = false;
+
+        // 2. 强行回归中心点
+        targetX = WINDOW_W / 2.0f;
+        isTeleporting = true;
+
+        // 3. 强行修改地刺逻辑 (我们可以直接修改全局变量)
+        currentSpikeState = SPIKE_ACTIVE;
+        // 这里我们可以稍微改一下 SpikeManager，让它支持“全屏两边刺”
+        return;
+    }
+
+    // --- 三阶段疯狂模式逻辑 ---
+    if (isFinalPhase) {
+        // 锁定位置：防止位移结束后再次触发随机位移
+        if (!isTeleporting) x = WINDOW_W / 2.0f;
+
+        // 持续使用垂直剑雨，缩短间隔
+        static DWORD lastFinalSwordTime = 0;
+        if (currentTime - lastFinalSwordTime > 900) { // 0.8秒一波，非常密集
+            SpawnSwordWallVertical();
+            lastFinalSwordTime = currentTime;
+        }
+        return; // 拦截后续的老 AI 逻辑
+    }
+
     // 基础攻击间隔
     if (currentTime - lastAttackTime > 1500) {
         lastAttackTime = currentTime;
@@ -557,4 +632,72 @@ void Boss::BossAI() {
         
     }
 
+}
+
+void Boss::PhaseTwoAI() {
+    DWORD now = GetTickCount();
+
+    // 0. 状态检查：如果在瞬移或攻击中，啥都别干
+    if (isTeleporting || orbAttackActive || swordAttackActive || burstAttackActive || laserAttackActive) {
+        return;
+    }
+
+    // 1. 瞬移决策逻辑
+    if (phaseTwoTargetIndex == -1) {
+        // 随机选一个新位置
+        int newIndex = rand() % phaseTwoAnchors.size();
+
+        // 简单的防重复：如果跟上次一样，就取下一个
+        if (newIndex == phaseTwoTargetIndex) {
+            newIndex = (newIndex + 1) % phaseTwoAnchors.size();
+        }
+        phaseTwoTargetIndex = newIndex;
+
+        // 启动瞬移
+        isTeleporting = true;
+        teleportStartTime = now;
+
+        // 设置目标 (更新 targetX 和 targetY)
+        targetX = phaseTwoAnchors[newIndex].x;
+        targetY = phaseTwoAnchors[newIndex].y;
+
+        // 决定到了之后打几次 (1次或2次)
+        phaseTwoAttackCount = 1 + rand() % 2;
+        return;
+    }
+
+    // 2. 攻击决策逻辑
+    if (phaseTwoAttackCount > 0) {
+        // 瞬移到位后，发呆 1 秒再攻击，给玩家反应时间
+        static DWORD waitTimer = 0;
+        if (now - waitTimer < 1000) return; // 等待中...
+
+        // 随机选招式 (去掉了不适合高空的纵向剑雨)
+        int attackType = rand() % 3;
+
+        if (attackType == 0) { // 光球
+            orbAttackActive = true;
+            orbAttackCount = 0;
+            orbAttackLastTime = now;
+        }
+        else if (attackType == 1) { // 横向飞剑 (需要修改生成函数支持高度！)
+            swordAttackActive = true;
+            swordAttackType = 1; // 标记为横向
+            swordAttackCount = 0;
+            swordAttackLastTime = now;
+            swordAttackFromLeft = rand() % 2 == 0;
+        }
+        else if (attackType == 2) { // 脸刺 (Burst)
+            burstAttackActive = true;
+            burstWaveCount = 0;
+            lastBurstTime = now;
+        }
+
+        phaseTwoAttackCount--; // 消耗一次攻击次数
+        waitTimer = now;       // 重置等待计时
+    }
+    else {
+        // 3. 次数用尽 -> 准备下一次瞬移
+        phaseTwoTargetIndex = -1; // 设置为 -1 会在下一帧触发上面的瞬移逻辑
+    }
 }

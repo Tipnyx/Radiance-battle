@@ -39,6 +39,7 @@ public:
 
     // 拖尾变量
     float targetX;             // 目标位置
+    float targetY;
     bool isTeleporting = false; // 是否正在位移
     std::vector<TrailPoint> trails; // 存储拖尾坐标
     const int MAX_TRAILS = 10;      // 拖尾长度
@@ -56,6 +57,12 @@ public:
     // 图片缓存
     IMAGE sunCache; // 增加一个图片缓存对象
     void InitSunCache(); // 用于初始化绘制这张图
+
+    // 二阶段战斗逻辑变量
+    bool isPhaseTwoActive = false; // 二阶段是否激活
+    int phaseTwoTargetIndex = -1;  // 当前瞬移的目标是第几个锚点
+    int phaseTwoAttackCount = 0;   // 在当前位置还需要攻击几次
+    DWORD teleportStartTime = 0;   // 记录瞬移开始的时间
 
     IMAGE hitCache;
 	void InitHitCache();
@@ -76,5 +83,6 @@ public:
     void reset();
 
     void BossAI();
+    void PhaseTwoAI(); // 记得声明这个新函数
 };
 

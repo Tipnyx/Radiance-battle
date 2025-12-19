@@ -247,7 +247,7 @@ void UpdateCamera(Player& p) {
     if (cameraX < -200) cameraX = -200;
     if (cameraX > 200) cameraX = 200;
 
-    if (boss.active) {
+    if (boss.active && !boss.isPhaseTwoActive) {
         float targetY = 0;
         cameraY += (targetY - cameraY) * 0.1f;
     }
