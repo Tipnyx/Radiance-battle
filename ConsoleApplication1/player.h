@@ -12,7 +12,7 @@ public:
 
     // 无敌帧
     int hurtTimer = 0;            // 受伤无敌倒计时
-    const int HURT_DURATION = 90; // 受伤后无敌 1秒 (约60帧)
+    const int HURT_DURATION = 60; // 受伤后无敌 1秒 (约60帧)
 
     // 二段跳
     int jumpCount = 0; //当前跳跃次数

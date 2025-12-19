@@ -146,9 +146,52 @@ void DrawPlatform() {
     setfillstyle(BS_SOLID);
 }
 
+void LastSpike() {
+    // --- 新增：三阶段（决战模式）的特殊处理 ---
+
+        // 1. 确定两边地刺的范围（左右各占 1/4）
+        float sideWidth = PLATFORM_W / 4.0f;
+
+        Rect leftSpikeRect = { (float)PLATFORM_X, (float)PLATFORM_Y - 5, sideWidth, 10 };
+        Rect rightSpikeRect = { (float)PLATFORM_X + PLATFORM_W * 0.75f, (float)PLATFORM_Y - 5, sideWidth, 10 };
+
+        // 2. 绘制地刺（两边同时画）
+        DrawSpikes(leftSpikeRect.x, leftSpikeRect.y, leftSpikeRect.w, leftSpikeRect.h);
+        DrawSpikes(rightSpikeRect.x, rightSpikeRect.y, rightSpikeRect.w, rightSpikeRect.h);
+
+        // 3. 伤害判定（两边都要检测）
+        if (!player.isInvincible) {
+            Rect pRect = player.getHitbox();
+            pRect.x += 10; pRect.w -= 20; // 缩小判定，更公平
+
+            // 检测左边或右边是否撞刺
+            if (pRect.checkCollision(leftSpikeRect) || pRect.checkCollision(rightSpikeRect)) {
+                if (pRect.y + pRect.h > PLATFORM_Y - 25) {
+                    player.hp--;
+                    player.isInvincible = true;
+                    player.vy = -8.0f;
+                }
+            }
+        }
+
+        // 4. 下劈弹起判定（可选，让玩家能在两边的刺上“跳跳乐”）
+        if (player.isAttacking && player.attackDir == 2) {
+            if (player.attackBox.checkCollision(leftSpikeRect) || player.attackBox.checkCollision(rightSpikeRect)) {
+                if (player.y + player.h <= PLATFORM_Y + 10) {
+                    player.vy = -9.0f;
+                    player.jumpCount = 1;
+                }
+            }
+        }
+}
 void SpikeManager(DWORD gameStartTime) {
     DWORD now = GetTickCount();
 
+    if (boss.isFinalPhase) {
+        LastSpike();
+        return;
+    }
+    
     // 1. 状态机更新逻辑
     if (currentSpikeState == SPIKE_HIDDEN) {
 		// boss 血量低于 650 -> 进入预警状态
@@ -173,6 +216,8 @@ void SpikeManager(DWORD gameStartTime) {
             spikeOnLeft = !spikeOnLeft; // 换边
         }
     }
+
+    
 
     // 2. 确定当前地刺的区域
     Rect currentSpikeRect = { 0, 0, 0, 0 };

@@ -13,6 +13,8 @@ public:
     bool active = true;
     float alpha = 0; // 用于进场时的渐显效果
 
+    bool isFinalPhase = false; // 是否进入三阶段
+
     DWORD lastAttackTime = 0;
     DWORD lastOrbTime = 0;
     int orbCount = 0;

@@ -223,8 +223,12 @@ void Player::update() {
     // µô³öÆÁÄ»ÖØÖÃ (Ðé¿ÕÉËº¦)
     if (y > WINDOW_H) {
         hp--;
-        reset();
-        y = 0; // ´ÓÌì¶ø½µ
+        player.hurtTimer = player.HURT_DURATION;
+        player.isInvincible = true;
+        x = WINDOW_W / 2;
+        y = PLATFORM_Y - h - 100;
+        vx = 0; vy = 0;
+        jumpCount = 0;
     }
 }
 

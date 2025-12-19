@@ -26,6 +26,7 @@ void GameReset(DWORD& gameStartTime) {
     for (auto p : projectiles) delete p;
     projectiles.clear();
     gameStartTime = GetTickCount();
+    boss.isFinalPhase = false;
 
     // 2. 重置音乐
     // 停止当前播放

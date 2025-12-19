@@ -260,7 +260,7 @@ void Boss::SpawnOrbs() {
         float angle = (rand() % 360) * 3.14159f / 180.0f;
         float dist = 300.0f;
         ox = (WINDOW_W / 2) + cos(angle) * dist;
-        oy = (PLATFORM_Y - 200) - sin(angle) * 100;
+        oy = (PLATFORM_Y - 300) - sin(angle) * 100;
         float dx = ox - (player.x + player.w / 2);
         float dy = oy - (player.y + player.h / 2);
         if (sqrt(dx * dx + dy * dy) >= minDist) break;
@@ -345,6 +345,41 @@ void Boss::BossAI() {
     }
     
     DWORD currentTime = GetTickCount();
+
+    // --- 三阶段触发判定 ---
+    if (hp <= 200 && !isFinalPhase) {
+        isFinalPhase = true;
+
+        // 1. 清空所有正在进行的旧攻击状态
+        orbAttackActive = false;
+        swordAttackActive = false;
+        burstAttackActive = false;
+        laserAttackActive = false;
+
+        // 2. 强行回归中心点
+        targetX = WINDOW_W / 2.0f;
+        isTeleporting = true;
+
+        // 3. 强行修改地刺逻辑 (我们可以直接修改全局变量)
+        currentSpikeState = SPIKE_ACTIVE;
+        // 这里我们可以稍微改一下 SpikeManager，让它支持“全屏两边刺”
+        return;
+    }
+
+    // --- 三阶段疯狂模式逻辑 ---
+    if (isFinalPhase) {
+        // 锁定位置：防止位移结束后再次触发随机位移
+        if (!isTeleporting) x = WINDOW_W / 2.0f;
+
+        // 持续使用垂直剑雨，缩短间隔
+        static DWORD lastFinalSwordTime = 0;
+        if (currentTime - lastFinalSwordTime > 900) { // 0.8秒一波，非常密集
+            SpawnSwordWallVertical();
+            lastFinalSwordTime = currentTime;
+        }
+        return; // 拦截后续的老 AI 逻辑
+    }
+
 
     // 处理环形剑连发逻辑
     if (burstAttackActive) {

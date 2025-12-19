@@ -8,4 +8,5 @@ void DrawPlatform();
 
 void DrawUI();
 
+void LastSpike();
 void SpikeManager(DWORD gameStartTime);
