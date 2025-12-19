@@ -186,6 +186,7 @@ BOSS出招判定
 以及玩家HP小于0后的重置逻辑
 */
 void GameLogic(DWORD& gameStartTime) {
+	UpdateCamera(player); // 更新镜头位置
     if (player.hp > 0) {
         // 1. 更新逻辑
 		player.update(); // 玩家动画和状态更新
@@ -212,13 +213,13 @@ void DrawEntities() {
     if (debug_mode) {
         setlinecolor(GREEN); // 玩家本体用绿色框
         Rect pRect = player.getHitbox();
-        rectangle((int)pRect.x, (int)pRect.y, (int)(pRect.x + pRect.w), (int)(pRect.y + pRect.h));
+        rectangle((int)pRect.x-cameraX, (int)pRect.y-cameraY, (int)(pRect.x-cameraX + pRect.w), (int)(pRect.y-cameraY + pRect.h));
 
         if (player.isAttacking) {
             setlinecolor(YELLOW); // 玩家攻击范围用黄色框
-            rectangle((int)player.attackBox.x, (int)player.attackBox.y,
-                (int)(player.attackBox.x + player.attackBox.w),
-                (int)(player.attackBox.y + player.attackBox.h));
+            rectangle((int)player.attackBox.x - cameraX, (int)player.attackBox.y - cameraY,
+                (int)(player.attackBox.x - cameraX + player.attackBox.w),
+                (int)(player.attackBox.y - cameraY + player.attackBox.h));
         }
     }
     // 如果开启了调试模式则绘制红框
@@ -227,3 +228,23 @@ void DrawEntities() {
     boss.draw(); //画Boss
     if (player.hp > 0) player.draw(); // 画玩家
 };
+
+
+void UpdateCamera(Player& p) {
+    // 目标：让玩家处于屏幕中心
+	// 被减数：想要以它为中心的那个实体的坐标；
+	// 减数：那个中心物体在屏幕上的位置
+    float targetX = p.x - (WINDOW_W / 2.0f);
+    float targetY = p.y - (PLATFORM_Y - p.h);
+
+    // 平滑跟随 (0.1f 是跟随速度)
+    cameraX += (targetX - cameraX) * 0.1f;
+    cameraY += (targetY - cameraY) * 0.1f;
+    cameraY = 0;
+
+    // 限制镜头边界（防止看到地图外的黑边）
+     if (cameraX < -200) cameraX = -200;
+	 if (cameraX > 200) cameraX = 200;
+	 //if (cameraX > WINDOW_W * 3.0f / 4.0f) cameraX = WINDOW_W * 3.0f / 4.0f;
+    // if (cameraX > MAP_WIDTH - WINDOW_W) cameraX = ...
+}

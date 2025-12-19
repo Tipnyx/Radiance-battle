@@ -14,7 +14,7 @@ COLORREF Fade(COLORREF c, float a) {
 
 Boss::Boss() {
         x = WINDOW_W / 2;
-        y = -50; // 悬浮在空中
+        y = -100; // 悬浮在空中
         InitSunCache();
         InitHitCache();
 }
@@ -28,7 +28,7 @@ void Boss::update() {
     }
     // 终止位置
     else{
-        y = 250 + sin(GetTickCount() / 500.0f) * 20;
+        y = 200 + sin(GetTickCount() / 500.0f) * 20;
     }
     // 简单的悬浮律动 (正弦波)
 
@@ -103,7 +103,7 @@ void Boss::draw() {
         // 这里只需要画一个简化的太阳主体作为残影，否则性能消耗太大
         for (int k = 0; k < 60; k += 10) {
                 setfillcolor(Fade(RGB(255, 180 - k, 100 - k), trailAlpha));
-                solidcircle(tx, ty, 80 - k);
+                solidcircle(tx - cameraX, ty - cameraY, 80 - k);
         }
     }
 
@@ -117,7 +117,7 @@ void Boss::draw() {
         setlinecolor(Fade(RGB(240, 240, 240),alpha));
         setlinestyle(PS_SOLID, 5);
         setfillcolor(NULL);
-        circle(cx, cy, 90 + 30 * j);
+        circle(cx - cameraX, cy - cameraY, 90 + 30 * j);
     }
 
     for (int i = 0; i < 8; i++) {
@@ -128,11 +128,11 @@ void Boss::draw() {
         
         setlinecolor(Fade(RGB(255, 255, 220),alpha));
         setlinestyle(PS_SOLID, 11+ (rand() % 3));
-        line(cx, cy, ex, ey);
+        line(cx - cameraX, cy - cameraY, ex - cameraX, ey - cameraY);
         
         setlinecolor(Fade(RGB(204, 218, 221),alpha));
         setlinestyle(PS_SOLID, 9);
-        line(cx, cy, ex, ey);
+        line(cx - cameraX, cy - cameraY, ex - cameraX, ey - cameraY);
         
         // --- 末端尖刺逻辑 ---
         float spikeLen = 45.0f;    // 尖刺从末端往外延伸的长度
@@ -141,16 +141,16 @@ void Boss::draw() {
 
         POINT pts[3];
         // 尖刺顶点：在 angle 方向延伸
-        pts[0].x = cx + (int)((baseR + spikeLen) * cos(angle));
-        pts[0].y = cy + (int)((baseR + spikeLen) * sin(angle));
+        pts[0].x = cx - cameraX + (int)((baseR + spikeLen) * cos(angle));
+        pts[0].y = cy - cameraY + (int)((baseR + spikeLen) * sin(angle));
 
         // 尖刺底边左角：利用垂直向量 (-sin, cos) 进行偏移
-        pts[1].x = cx + (int)(baseR * cos(angle) - spikeWidth * sin(angle));
-        pts[1].y = cy + (int)(baseR * sin(angle) + spikeWidth * cos(angle));
+        pts[1].x = cx - cameraX + (int)(baseR * cos(angle) - spikeWidth * sin(angle));
+        pts[1].y = cy - cameraY + (int)(baseR * sin(angle) + spikeWidth * cos(angle));
 
         // 尖刺底边右角：利用垂直向量 (sin, -cos) 进行偏移
-        pts[2].x = cx + (int)(baseR * cos(angle) + spikeWidth * sin(angle));
-        pts[2].y = cy + (int)(baseR * sin(angle) - spikeWidth * cos(angle));
+        pts[2].x = cx - cameraX + (int)(baseR * cos(angle) + spikeWidth * sin(angle));
+        pts[2].y = cy - cameraY + (int)(baseR * sin(angle) - spikeWidth * cos(angle));
 
         // 填充颜色：使用稍微亮一点的米白色，制造立体感
         setfillcolor(Fade(RGB(255, 255, 240),alpha));
@@ -161,17 +161,17 @@ void Boss::draw() {
     // SRCPAINT参数会将太阳图片和原有的主体进行了位运算
 	// 会去掉黑色背景，同时把太阳的亮色部分叠加上去
 	// 造成某种视觉上的发光效果，透明感，能量体的感觉
-    putimage(x-100, y-100, &sunCache,SRCPAINT); 
+    putimage(x-100 - cameraX, y-100 - cameraY, &sunCache,SRCPAINT);
 
     if (boss.boss_is_invincible){
-		putimage(x - 150, y - 150, &hitCache, SRCPAINT);
+		putimage(x - 150 - cameraX, y - 150 - cameraY, &hitCache, SRCPAINT);
     }
     
 
     setfillcolor(NULL);
 	setlinecolor(Fade(RGB(255, 200, 17),alpha));
 	setlinestyle(PS_SOLID, 3);
-	circle(cx, cy, 90 + (rand() % 3)); // 微微抖动的边框
+	circle(cx - cameraX, cy - cameraY, 90 + (rand() % 3)); // 微微抖动的边框
 
 }
 
@@ -193,7 +193,7 @@ void Boss::drawDebug() {
     setlinecolor(RED);
     //setfillstyle(BS_NULL); // 无填充
     Rect r = getRect();
-    rectangle((int)r.x, (int)r.y, (int)(r.x + r.w), (int)(r.y + r.h));
+    rectangle((int)r.x - cameraX, (int)r.y - cameraY, (int)(r.x - cameraX + r.w), (int)(r.y - cameraY + r.h));
     
     settextcolor(WHITE);
     settextstyle(20, 0, _T("Consolas"));
@@ -205,24 +205,23 @@ void Boss::drawDebug() {
 void Boss::SpawnSwordWallHorizontal(bool fromLeft) {
     //printf("横剑\n");
 	// 先定义一下画横剑的参数,startX,vx, angle,这都是好直接确定的
-    float startX = fromLeft ? -100.0f : WINDOW_W + 100.0f; // 从左还是从右，初始坐标
-    float vx = fromLeft ? 11.0f : -11.0f; // 对应的速度方向
+    float startX = fromLeft ? -280.0f : WINDOW_W + 280.0f; // 从左还是从右，初始坐标
+    float vx = fromLeft ? 20.0f : -20.0f; // 对应的速度方向
     float angle = fromLeft ? 0.0f : 3.14159f;
 
     // 现在我们要算y的分布了
-    int totalSwords = 12; // 定义多少把剑
+    int totalSwords = 16; // 定义多少把剑
     int spacing = 70;     // 剑之间的间隔多大,注意我们的主角是40格宽,65格高的
 
-    int gapA = rand() % totalSwords;
-    int gapB = rand() % totalSwords;
-    int gapC = rand() % totalSwords;
+    int gapA = rand() % (totalSwords * 1 / 8) + 1 + (rand() % 3 - 1); //2到4随机一个
+	int gapB = rand() % (totalSwords * 3 / 8) + (rand() % 5 - 1); // 4到8随机一个
+	int gapC = rand() % (totalSwords * 3 / 8) + (rand() % 5 - 1); // 4到8随机一个
+	int gapD = rand() % (totalSwords * 5 / 8) + (rand() % 5 - 1); // 8到12随机一个
 
-    // 确保缺口不会生成在太高或太低的位置，保留上下边界
-    int gapStart = 1;
-    int randomOffset = (rand() % 50) - 40; // 在 Y 轴方向整体上下浮动 -25 到 +25 像素
+    int randomOffset = (rand() % 50) - 30; // 在 Y 轴方向整体上下浮动 -25 到 +25 像素
 
     for (int i = 0; i < totalSwords; i++) {
-        if (i >= gapStart && (i == gapA || i == gapB || i == gapC)) continue;
+        if ((i == gapA || i == gapB || i == gapC || i == gapD)) continue;
         // 分布在Y轴上，覆盖玩家可能跳跃的高度
         float py = PLATFORM_Y  - (i * spacing) + randomOffset;
         projectiles.push_back(new Sword(startX, py, vx, 0, angle, false));
@@ -231,22 +230,24 @@ void Boss::SpawnSwordWallHorizontal(bool fromLeft) {
 
 void Boss::SpawnSwordWallVertical() {
     //printf("竖剑\n");
-	int totalSwords = 20; // 定义多少把剑
+	int totalSwords = 24; // 定义多少把剑
 	float spacing = 75.0f; // 剑之间的间隔多大
-    int gapStart = 2;
 
-    int gapA = rand() % totalSwords;
-    int gapB = rand() % totalSwords;
-    int gapC = rand() % totalSwords;
-
+    int gapA = rand() % (totalSwords * 1 / 8) + (rand() % 3 -1);
+    int gapB = rand() % (totalSwords * 3/ 8) + (rand() % 5 - 1);
+    int gapC = rand() % (totalSwords * 3 / 8) + (rand() % 5 - 1);
+    int gapD = rand() % (totalSwords * 5 / 8) + (rand() % 5 - 1);
+    int gapE = rand() % (totalSwords * 5 / 8) + (rand() % 5 - 1);
+    int gapF = rand() % (totalSwords * 7 / 8) + (rand() % 3 - 1);
+    
     int randomOffset = (rand() % 60) - 30;
 
-    float startXBase = PLATFORM_X;
+    float startXBase = PLATFORM_X - 300;
 
-    for (int i = 0; i < 15; i++) {
-        if (i >= gapStart && (i == gapA || i == gapB || i == gapC)) continue; // gap跳过
+    for (int i = 0; i < 25; i++) {
+        if ((i == gapA || i == gapB || i == gapC || i == gapD || i == gapE || i == gapF)) continue; // gap跳过
         float px = startXBase + randomOffset + (i * spacing);
-        projectiles.push_back(new Sword(px, -120.0f, 0, 15.0f, 1.5708f, false));
+        projectiles.push_back(new Sword(px, -100.0f, 0, 20.0f, 1.5708f, false));
     }
 }
 
@@ -322,9 +323,9 @@ void Boss::SpawnLaserBurst() {
     float baseRotation = 0.0f;
 
      //如果想稍微"针对"一下玩家，可以让基础角度大致指向玩家，但依然是全屏散射
-    /*float dx = (player.x + player.w / 2) - x;
+   /* float dx = (player.x + player.w / 2) - x;
     float dy = (player.y + player.h / 2) - y;
-    baseRotation = atan2(dy, dx); */
+    baseRotation = atan2(dy, dx);*/ 
 
     for (int i = 0; i < count; i++) {
         // 最终角度 = 基础旋转 + 波次偏移 + 随机扰动 + 循环增量
@@ -385,15 +386,19 @@ void Boss::BossAI() {
 
     //剑雨攻击正在进行
     if (swordAttackActive) {
-        if (swordAttackCount < SWORD_ATTACK_TOTAL && currentTime - swordAttackLastTime > SWORD_ATTACK_INTERVAL) {
-            swordAttackLastTime = currentTime;
-            swordAttackCount++;
-            if (swordAttackType == 1) {
+        if (swordAttackType == 1) {
+            if (swordAttackCount < SWORD_ATTACK_TOTAL && currentTime - swordAttackLastTime > SWORD_ATTACK_INTERVAL_HORIZON) {
+                swordAttackLastTime = currentTime;
+                swordAttackCount++;
                 SpawnSwordWallHorizontal(swordAttackFromLeft);
-            }
-            else {
-                SpawnSwordWallVertical();
-            }
+			}
+		}
+		if (swordAttackType == 2) {
+			if (swordAttackCount < SWORD_ATTACK_TOTAL && currentTime - swordAttackLastTime > SWORD_ATTACK_INTERVAL_VERTICAL) {
+				swordAttackLastTime = currentTime;
+				swordAttackCount++;
+				SpawnSwordWallVertical();
+			}
         }
         if (swordAttackCount >= SWORD_ATTACK_TOTAL) {
             swordAttackActive = false;
@@ -407,7 +412,7 @@ void Boss::BossAI() {
         DWORD elapsed = currentTime - lastLaserTime;
 
         // 节奏：每隔 800ms 射一波 (预警0.7s + 爆发0.5s，所以波次间要有重叠才刺激)
-        if (elapsed > 800 && laserWaveCount < 3) {
+        if (elapsed > 500 && laserWaveCount < 3) {
             SpawnLaserBurst();
             lastLaserTime = currentTime;
             laserWaveCount++;
@@ -422,7 +427,7 @@ void Boss::BossAI() {
     }
 
     // 基础攻击间隔
-    if (currentTime - lastAttackTime > 2000) {
+    if (currentTime - lastAttackTime > 1500) {
         lastAttackTime = currentTime;
         
 		// 避免连续出现同一种攻击

@@ -254,7 +254,7 @@ void Player::draw() {
 
         setfillcolor(c);
         // 绘制稍微缩小的矩形，更有“烟雾”感
-        solidrectangle((int)g.x + 3, (int)g.y + 3, (int)(g.x + w - 3), (int)(g.y + h - 3));
+        solidrectangle((int)g.x -cameraX + 3, (int)g.y -cameraY + 3, (int)(g.x - cameraX + w - 3), (int)(g.y - cameraY + h - 3));
     }
 
     // --- 2. 绘制本体 ---
@@ -271,12 +271,12 @@ void Player::draw() {
     else {
         setfillcolor(COLOR_KNIGHT);
     }
-    solidrectangle((int)x, (int)y, (int)(x + w), (int)(y + h));
+    solidrectangle((int)x - cameraX, (int)y - cameraY, (int)(x - cameraX + w), (int)(y - cameraY + h));
 
     // 绘制暗影冲刺就绪指示器
     if (canShadowDash) {
         setfillcolor(BLACK);
-        solidcircle((int)(x + w / 2), (int)(y - 8), 3);
+        solidcircle((int)(x - cameraX + w / 2), (int)(y - cameraY - 8), 3);
     }
 
 
@@ -354,13 +354,13 @@ void Player::draw() {
 
             // 填充多边形顶点数组
             // 前半部分存外弧
-            pts[i].x = (long)drawX_Outer;
-            pts[i].y = (long)drawY_Outer;
+            pts[i].x = (long)drawX_Outer - cameraX;
+            pts[i].y = (long)drawY_Outer - cameraY;
 
             // 后半部分逆序存内弧 (闭合形状)
             int innerIndex = (SAMPLE_COUNT * 2 - 1) - i;
-            pts[innerIndex].x = (long)drawX_Inner;
-            pts[innerIndex].y = (long)drawY_Inner;
+            pts[innerIndex].x = (long)drawX_Inner - cameraX;
+            pts[innerIndex].y = (long)drawY_Inner - cameraY;
         }
 
         // 绘制

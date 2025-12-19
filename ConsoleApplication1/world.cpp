@@ -25,24 +25,24 @@ void DrawSpikes(float x, float y, float w, float h) {
 
         // 倒三角形剑身 (底在下，尖在上)
         POINT pts[] = {
-            {(int)cx - 7, (int)bot},
-            {(int)cx + 7, (int)bot},
-            {(int)cx, (int)top}
+            {(int)cx - 7 - cameraX, (int)bot - cameraY},
+            {(int)cx + 7 - cameraX, (int)bot - cameraY},
+            {(int)cx - cameraX, (int)top - cameraY}
         };
         solidpolygon(pts, 3);
 
         // 倒置的翼状剑格 (增加压迫感)
         POINT guard[] = {
-            {(int)cx, (int)bot - 12},      // 下拉中心点
-            {(int)cx - 16, (int)bot - 2},  // 左翼
-            {(int)cx + 16, (int)bot - 2}   // 右翼
+            {(int)cx - cameraX, (int)bot - 12 - cameraY},      // 下拉中心点
+            {(int)cx - 16 - cameraX, (int)bot - 2 - cameraY},  // 左翼
+            {(int)cx + 16 - cameraX, (int)bot - 2 - cameraY}   // 右翼
         };
         solidpolygon(guard, 3);
 
         // 核心亮线
         setlinecolor(WHITE);
         setlinestyle(PS_SOLID, 2);
-        line((int)cx, (int)bot - 2, (int)cx, (int)top + 8);
+        line((int)cx - cameraX, (int)bot - 2 - cameraY, (int)cx - cameraX, (int)top + 8 - cameraY);
     }
     setlinestyle(PS_SOLID, 1); // 还原线型
 }
@@ -81,7 +81,7 @@ void DrawUI() {
             setlinecolor(RGB(40, 40, 60));
             setlinestyle(PS_SOLID, 2);
             // 只画出淡淡的轮廓
-            ellipse(cx - 12, cy - 15, cx + 12, cy + 15);
+            ellipse(cx - 12 , cy - 15, cx + 12, cy + 15);
         }
     }
 
@@ -102,13 +102,13 @@ void DrawPlatform() {
     // 1. 绘制高光底板 (Highlight Layer)
         // 这一层画在下面，颜色稍亮。因为上面的层会向下偏移，所以这层的顶部会露出来形成高光倒角。
     setfillcolor(RGB(60, 70, 90)); // 亮蓝灰色
-    solidroundrect(PLATFORM_X, PLATFORM_Y, PLATFORM_X + PLATFORM_W, PLATFORM_Y + PLATFORM_H, r, r);
+    solidroundrect(PLATFORM_X - cameraX, PLATFORM_Y - cameraY, PLATFORM_X + PLATFORM_W - cameraX, PLATFORM_Y + PLATFORM_H - cameraY, r, r);
 
     // 2. 绘制主体层 (Body Layer)
     // 这一层颜色深，向下偏移 4 像素，覆盖住底板的下半部分
     setfillcolor(RGB(20, 24, 35)); // 深邃暗色
     // 注意：y 坐标 +4，但高度保持一致，这样底部也会覆盖住底板（因为底板也是圆角，重叠起来刚好）
-    solidroundrect(PLATFORM_X, PLATFORM_Y + 4, PLATFORM_X + PLATFORM_W, PLATFORM_Y + PLATFORM_H, r, r);
+    solidroundrect(PLATFORM_X - cameraX, PLATFORM_Y + 4 - cameraY, PLATFORM_X - cameraX + PLATFORM_W, PLATFORM_Y - cameraY + PLATFORM_H, r, r);
 
     int padding = 10; // 纹理向内缩进，防止画到圆角外面
 
@@ -120,12 +120,12 @@ void DrawPlatform() {
         if (type == 0) {
             // 亮斑
             setfillcolor(RGB(70, 80, 100));
-            solidcircle(rx, ry, 1); // 改用圆点，更细腻
+            solidcircle(rx - cameraX, ry - cameraY, 1); // 改用圆点，更细腻
         }
         else if (type == 1) {
             // 暗坑
             setfillcolor(RGB(10, 12, 18));
-            solidcircle(rx, ry, 1);
+            solidcircle(rx - cameraX, ry - cameraY, 1);
         }
     }
 
@@ -135,14 +135,14 @@ void DrawPlatform() {
         int sx = PLATFORM_X + padding + rand() % (PLATFORM_W - 2 * padding);
         int sy = PLATFORM_Y + 10 + rand() % (PLATFORM_H - 20);
         int len = 10 + rand() % 30;
-        line(sx, sy, sx + len, sy + (rand() % 3 - 1));
+        line(sx - cameraX, sy - cameraY, sx - cameraX + len, sy - cameraY + (rand() % 3 - 1));
     }
 
     // 5. 边缘描边
     setlinecolor(RGB(40, 50, 70)); // 很淡的描边
     setlinestyle(PS_SOLID, 1);
     //setfillcolor(NULL); // 不填充，只画框
-    roundrect(PLATFORM_X, PLATFORM_Y + 4, PLATFORM_X + PLATFORM_W, PLATFORM_Y + PLATFORM_H, r, r);
+    roundrect(PLATFORM_X - cameraX, PLATFORM_Y + 4 - cameraY, PLATFORM_X + PLATFORM_W - cameraX, PLATFORM_Y + PLATFORM_H - cameraY, r, r);
     setfillstyle(BS_SOLID);
 }
 
@@ -195,8 +195,8 @@ void SpikeManager(DWORD gameStartTime) {
             setfillcolor(RGB(100, 100, 0));   // 暗黄 (产生闪烁感)
         }
         // 绘制半透明提示区 (实心矩形模拟)
-        solidrectangle((int)currentSpikeRect.x, PLATFORM_Y - 5,
-            (int)(currentSpikeRect.x + currentSpikeRect.w), PLATFORM_Y);
+        solidrectangle((int)currentSpikeRect.x - cameraX, PLATFORM_Y - 5 - cameraY,
+            (int)(currentSpikeRect.x - cameraX + currentSpikeRect.w), PLATFORM_Y - cameraY);
 
         // 预警阶段没有任何伤害判定
     }
@@ -234,3 +234,4 @@ void SpikeManager(DWORD gameStartTime) {
         }
     }
 };
+

@@ -27,23 +27,8 @@ std::vector<Projectile*> projectiles;
 
 int waveCount = 0;
 
-// --- main.cpp ---
 float cameraX = 0;
 float cameraY = 0;
-
-void UpdateCamera(Player& p) {
-    // 目标：让玩家处于屏幕中心
-    float targetX = p.x - WINDOW_W / 2.0f;
-    float targetY = p.y - WINDOW_H / 2.0f;
-
-    // 平滑跟随 (0.1f 是跟随速度)
-    cameraX += (targetX - cameraX) * 0.1f;
-    cameraY += (targetY - cameraY) * 0.1f;
-
-    // 限制镜头边界（防止看到地图外的黑边）
-    // if (cameraX < 0) cameraX = 0;
-    // if (cameraX > MAP_WIDTH - WINDOW_W) cameraX = ...
-}
 
 int main() {
     DWORD gameStartTime = GetTickCount();
@@ -62,7 +47,8 @@ int main() {
     srand((unsigned int)time(NULL));
     BeginBatchDraw();
     IMAGE img_bg;
-	loadimage(&img_bg, _T("background.png"), WINDOW_W, WINDOW_H);
+	loadimage(&img_bg, _T("background.png"), WINDOW_W + 200, WINDOW_H);
+    //putimage((int)(-cameraX * 0.3f), 0, &img_bg);
 
     while (true) {
 		// 1. 主逻辑更新
@@ -70,7 +56,7 @@ int main() {
         // 2. 绘图
         cleardevice();
 
-        putimage(0, 0, &img_bg);
+        putimage((int)(-cameraX * 0.3f - 100), 0, &img_bg);
         DrawEntities(); // 画实体
         DrawPlatform(); //画平台
         SpikeManager(gameStartTime);  //地刺管理，15秒后开始生成，左右半区来回切换

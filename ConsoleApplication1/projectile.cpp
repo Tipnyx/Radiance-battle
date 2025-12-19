@@ -12,7 +12,7 @@ void Projectile::drawDebug() {
         setlinecolor(RED);
         //setfillstyle(BS_NULL); // 无填充
         Rect r = getRect();
-        rectangle((int)r.x, (int)r.y, (int)(r.x + r.w), (int)(r.y + r.h));
+        rectangle((int)r.x - cameraX, (int)r.y - cameraY, (int)(r.x - cameraX + r.w), (int)(r.y - cameraY + r.h));
  }
 
 
@@ -122,28 +122,28 @@ void Orb::draw() {
             int offsetX = (int)(cos(angle) * (baseR + 5 + rand() % 8));
             int offsetY = (int)(sin(angle) * (baseR + 5 + rand() % 8));
             // 绘制随机的小圆弧线段，模拟能量溢出
-            arc((int)x + offsetX - 10, (int)y + offsetY - 10, (int)x + offsetX + 10, (int)y + offsetY + 10, angle, angle + 1.5f);
+            arc((int)x - cameraX + offsetX - 10, (int)y - cameraY + offsetY - 10, (int)x - cameraX + offsetX + 10, (int)y - cameraY + offsetY + 10, angle, angle + 1.5f);
         }
     }
 
     // --- 2. 绘制多层核心 ---
     // 最外层淡色晕影
     setfillcolor(colorGlow);
-    solidcircle((int)x, (int)y, baseR + 3 + (now % 3));
+    solidcircle((int)x - cameraX, (int)y - cameraY, baseR + 3 + (now % 3));
 
     // 主体层 (与光柱色一致)
     setfillcolor(colorMain);
-    solidcircle((int)x, (int)y, baseR);
+    solidcircle((int)x - cameraX, (int)y - cameraY, baseR);
 
     // 极亮核心
     setfillcolor(WHITE);
-    solidcircle((int)x, (int)y, (int)(baseR * 0.6f));
+    solidcircle((int)x - cameraX, (int)y - cameraY, (int)(baseR * 0.6f));
 
     // --- 3. 冲刺时的激波 ---
     if (state == CHARGING) {
         setlinecolor(WHITE);
         setlinestyle(PS_SOLID, 2);
-        circle((int)x, (int)y, baseR + 8); // 纯白激波圆环
+        circle((int)x - cameraX, (int)y - cameraY, baseR + 8); // 纯白激波圆环
         setlinestyle(PS_SOLID, 1);
     }
 }
@@ -195,13 +195,13 @@ void Sword::drawDebug(){
     Rect r = getRect();
 
 	//稍微调整一下矩形框的位置,让它更贴合剑身,你问我为什么?你自己算一算就知道了
-    rectangle((int)r.x - sin(angle)* (0.5*h), (int)r.y + cos(angle) * (0.5*h), (int)(r.x + r.w), (int)(r.y + r.h));
+    rectangle((int)r.x - cameraX - sin(angle)* (0.5*h), (int)r.y - cameraY + cos(angle) * (0.5*h), (int)(r.x - cameraX + r.w), (int)(r.y - cameraY + r.h));
 
     // 画出实际生效的红色判定点
     setfillcolor(RED);
     auto hPts = getHitPoints();
     for (auto& p : hPts) {
-        solidcircle(p.x, p.y, 4); // 用小红点表示实际伤害位
+        solidcircle(p.x - cameraX, p.y - cameraY, 4); // 用小红点表示实际伤害位
     }
 }
 
@@ -227,7 +227,7 @@ void Sword::update(Player& p) {
         y += vy;
     }
 
-    if (x < -200 || x > WINDOW_W + 200 || y < -200 || y > WINDOW_H + 200) active = false;
+    if (x < -400 || x > WINDOW_W + 400 || y < -200 || y > WINDOW_H + 200) active = false;
 }
 
 void Sword::draw(){
@@ -251,7 +251,7 @@ void Sword::draw(){
     float cosA = cos(angle);
     float sinA = sin(angle);
     auto trans = [&](POINT p) -> POINT {
-        return { (long)(x + p.x * cosA - p.y * sinA), (long)(y + p.x * sinA + p.y * cosA) };
+        return { (long)(x - cameraX + p.x * cosA - p.y * sinA), (long)(y - cameraY + p.x * sinA + p.y * cosA) };
         };
 
     // 1. --- 绘制外发光层 (Glow) ---
@@ -336,16 +336,16 @@ void Beam::draw() {
 
     // 绘制稍微暗一点的余辉
     setfillcolor(RGB(180, 180, 140));
-    solidrectangle((int)(x - dynamicGlow), 0, (int)x, WINDOW_H);
-    solidrectangle((int)(x + w), 0, (int)(x + w + dynamicGlow), WINDOW_H);
+    solidrectangle((int)(x - cameraX - dynamicGlow), 0, (int)x - cameraX, WINDOW_H);
+    solidrectangle((int)(x - cameraX + w), 0, (int)(x - cameraX + w + dynamicGlow), WINDOW_H);
 
     // 主光柱
     setfillcolor(COLOR_BEAM);
-    solidrectangle((int)x, 0, (int)(x + w), WINDOW_H);
+    solidrectangle((int)x - cameraX, 0, (int)(x - cameraX + w), WINDOW_H);
 
     // 3. (可选) 增加中心亮线，强化视觉冲击力
     setfillcolor(WHITE);
-    solidrectangle((int)(x + w / 2 - 2), 0, (int)(x + w / 2 + 2), WINDOW_H);
+    solidrectangle((int)(x - cameraX + w / 2 - 2), 0, (int)(x - cameraX + w / 2 + 2), WINDOW_H);
 }
 
 
@@ -370,10 +370,10 @@ void Laser::update(Player& p) {
 
     // --- 状态机 ---
     if (state == LASER_PREPARE) {
-        // 预警阶段 (0.7秒)：细线，跟随 Boss (如果需要 Boss 移动时激光跟着动，在这里更新 cx, cy)
+        // 预警阶段 (0.5秒)：细线，跟随 Boss (如果需要 Boss 移动时激光跟着动，在这里更新 cx, cy)
         currentWidth = 3.0f + sin(now / 50.0f) * 2.0f; // 微微闪烁
 
-        if (timeInState > 0.7f) {
+        if (timeInState > 0.5f) {
             state = LASER_FIRE;
             stateStartTime = now;
             // 播放发射音效（如果有）
@@ -408,15 +408,15 @@ void Laser::draw() {
     float ny = cos(angle) * w;
 
     POINT pts[4];
-    pts[0] = { (long)(cx + nx), (long)(cy + ny) }; // 起点左
-    pts[1] = { (long)(ex + nx), (long)(ey + ny) }; // 终点左
-    pts[2] = { (long)(ex - nx), (long)(ey - ny) }; // 终点右
-    pts[3] = { (long)(cx - nx), (long)(cy - ny) }; // 起点右
+    pts[0] = { (long)(cx + nx - cameraX), (long)(cy + ny - cameraY) }; // 起点左
+    pts[1] = { (long)(ex + nx - cameraX), (long)(ey + ny - cameraY) }; // 终点左
+    pts[2] = { (long)(ex - nx - cameraX), (long)(ey - ny - cameraY) }; // 终点右
+    pts[3] = { (long)(cx - nx - cameraX), (long)(cy - ny - cameraY) }; // 起点右
 
     if (state == LASER_PREPARE) {
         setlinecolor(RGB(255, 200, 100)); // 橙色预警线
         setlinestyle(PS_SOLID, 2);
-        line((int)cx, (int)cy, (int)ex, (int)ey);
+        line((int)cx - cameraX, (int)cy - cameraY, (int)ex - cameraX, (int)ey - cameraY);
     }
     else if (state == LASER_FIRE) {
         // 1. 绘制宽大的光辉（半透明感）
@@ -428,8 +428,8 @@ void Laser::draw() {
         float cnx = -sin(angle) * cw;
         float cny = cos(angle) * cw;
         POINT cpts[4] = {
-            { (long)(cx + cnx), (long)(cy + cny) }, { (long)(ex + cnx), (long)(ey + cny) },
-            { (long)(ex - cnx), (long)(ey - cny) }, { (long)(cx - cnx), (long)(cy - cny) }
+            { (long)(cx + cnx - cameraX), (long)(cy + cny - cameraY) }, { (long)(ex + cnx - cameraX), (long)(ey + cny - cameraY) },
+            { (long)(ex - cnx - cameraX), (long)(ey - cny - cameraY) }, { (long)(cx - cnx - cameraX), (long)(cy - cny - cameraY) }
         };
         setfillcolor(WHITE);
         solidpolygon(cpts, 4);
@@ -462,6 +462,6 @@ void Laser::drawDebug() {
     setlinecolor(MAGENTA);
     auto pts = getHitPoints();
     for (auto& p : pts) {
-        circle(p.x, p.y, (int)(currentWidth / 2));
+        circle(p.x - cameraX, p.y - cameraY, (int)(currentWidth / 2));
     }
 }

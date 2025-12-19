@@ -20,16 +20,17 @@ const COLORREF COLOR_BEAM = RGB(255, 255, 224);     // 光束色
 const COLORREF COLOR_BG = RGB(135, 206, 235); // 天空蓝
 
 // 物理常量
-const float GRAVITY = 0.6f;
+const float GRAVITY = 1.0f;
 const float MOVE_SPEED = 6.0f;
-const float JUMP_FORCE = -12.0f;
+const float JUMP_FORCE = -17.0f;
 const float DASH_SPEED = 15.0f;
 
 const int ORB_ATTACK_TOTAL = 3;    // 一次攻击发射3个
 const int ORB_ATTACK_INTERVAL = 1500; // 每1.5秒发射一个
 
 const int SWORD_ATTACK_TOTAL = 3; //一次三波
-const int SWORD_ATTACK_INTERVAL = 1500; //每1.5秒发射一波
+const int SWORD_ATTACK_INTERVAL_VERTICAL = 1000; //每1.5秒发射一波
+const int SWORD_ATTACK_INTERVAL_HORIZON = 1250; //每1.5秒发射一波
 
 const int TOTAL_BURST_WAVES = 2; // 总共两波
 
