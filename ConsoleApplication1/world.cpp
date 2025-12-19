@@ -1,5 +1,6 @@
 #include"world.h"
 #include"player.h"
+#include"boss.h"
 
 void DrawSpikes(float x, float y, float w, float h) {
     // --- 配色方案 (与白色光剑保持一致) ---
@@ -47,6 +48,7 @@ void DrawSpikes(float x, float y, float w, float h) {
 }
 
 extern Player player;
+extern Boss boss;
 
 // 绘制UI
 void DrawUI() {
@@ -149,8 +151,8 @@ void SpikeManager(DWORD gameStartTime) {
 
     // 1. 状态机更新逻辑
     if (currentSpikeState == SPIKE_HIDDEN) {
-        // 游戏开始超过15秒，进入左侧预警
-        if (now - gameStartTime > TIME_TO_START_SPIKES) {
+		// boss 血量低于 650 -> 进入预警状态
+        if (boss.hp < 650) {
             currentSpikeState = SPIKE_WARNING;
             spikeTimer = now;
             spikeOnLeft = true; // 第一次总是出现在左边

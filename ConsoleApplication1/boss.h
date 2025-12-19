@@ -50,6 +50,13 @@ public:
 	DWORD boss_invincible_start_time = 0;
 	const int BOSS_INVINCIBLE_DURATION = 300; // BOSS受击无敌时间200ms
 
+    // 图片缓存
+    IMAGE sunCache; // 增加一个图片缓存对象
+    void InitSunCache(); // 用于初始化绘制这张图
+
+    IMAGE hitCache;
+	void InitHitCache();
+
     Boss();
     void update();
     void draw();

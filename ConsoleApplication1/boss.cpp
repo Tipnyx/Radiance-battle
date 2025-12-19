@@ -15,7 +15,9 @@ COLORREF Fade(COLORREF c, float a) {
 Boss::Boss() {
         x = WINDOW_W / 2;
         y = -50; // 悬浮在空中
-    }
+        InitSunCache();
+        InitHitCache();
+}
 
 void Boss::update() {
     //入场效果
@@ -34,7 +36,7 @@ void Boss::update() {
     if (isTeleporting) {
         // 使用 Lerp 公式：当前位置 += (目标 - 当前) * 速度因子
         // 0.15f 这个值越大，移动越快；越小，拖尾越长越慢
-        x += (targetX - x) * 0.15f;
+        x += (targetX - x) * 0.10f;
 
         // 记录当前位置到拖尾数组
         TrailPoint p = { x, y, alpha };
@@ -56,6 +58,36 @@ void Boss::update() {
         }
     }
     
+}
+
+void Boss::InitSunCache() {
+    // 创建一个足够大的画布 (比如 200x200)
+    sunCache.Resize(200, 200);
+
+    // 切换绘图目标到这张图片上
+    SetWorkingImage(&sunCache);
+
+    // 把你原来的太阳绘制逻辑搬过来，坐标改为图片中心 (100, 100)
+    int mid = 100;
+    for (int i = 0; i < 90; i++) {
+        // 注意：这里先不要 Fade，alpha 留到贴图时整体处理
+        setfillcolor(RGB(255, 192 - i, 107 - i));
+        solidellipse(mid - 90 + i, mid - 90 + i, mid + 90 - i, mid + 90 - i);
+    }
+
+    // 恢复绘图目标为屏幕
+    SetWorkingImage(NULL);
+}
+
+void Boss::InitHitCache() {
+	hitCache.Resize(300, 300);
+	SetWorkingImage(&hitCache);
+	int mid = 150;
+	for (int i = 0; i < 45; i++) {
+		setfillcolor(RGB(255, 255 - 2 * i, 255 - 2 * i));
+		solidellipse(mid - 90 + i, mid - 90 + i, mid + 90 - i, mid + 90 - i);
+	}
+	SetWorkingImage(NULL);
 }
 
 void Boss::draw() {
@@ -126,20 +158,18 @@ void Boss::draw() {
 
     }
 
-    // 2. 主体像个太阳
-    for (int i = 0; i < 90; i++) {
-        if (boss.boss_is_invincible)
-        {
-            setfillcolor(Fade(RGB(255, 255 - i, 255 - i), alpha));
-            solidellipse(cx - 90 + i, cy - 90 + i, cx + 90 - i, cy + 90 - i);
-        }
-        else{
-            setfillcolor(Fade(RGB(255, 192 - i, 107 - i), alpha));
-            solidellipse(cx - 90 + i, cy - 90 + i, cx + 90 - i, cy + 90 - i);
-        }
+    // SRCPAINT参数会将太阳图片和原有的主体进行了位运算
+	// 会去掉黑色背景，同时把太阳的亮色部分叠加上去
+	// 造成某种视觉上的发光效果，透明感，能量体的感觉
+    putimage(x-100, y-100, &sunCache,SRCPAINT); 
+
+    if (boss.boss_is_invincible){
+		putimage(x - 150, y - 150, &hitCache, SRCPAINT);
     }
+    
+
     setfillcolor(NULL);
-	setlinecolor(Fade(RGB(255, 112, 17),alpha));
+	setlinecolor(Fade(RGB(255, 200, 17),alpha));
 	setlinestyle(PS_SOLID, 3);
 	circle(cx, cy, 90 + (rand() % 3)); // 微微抖动的边框
 

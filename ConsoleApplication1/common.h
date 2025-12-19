@@ -44,6 +44,10 @@ const int TIME_TO_START_SPIKES = 30000; // 30秒后开始
 const int DURATION_WARNING = 2000;      // 预警持续 2秒
 const int DURATION_ACTIVE = 8000;       // 攻击持续 8秒 (总共10秒一轮)
 
+// --- 摄像机位置 ---
+extern float cameraX;
+extern float cameraY;
+
 // 结构体：矩形碰撞箱
 struct Rect {
     float x, y, w, h; // x,y是矩形的左上角坐标

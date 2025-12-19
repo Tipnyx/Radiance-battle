@@ -21,8 +21,8 @@ void Projectile::drawDebug() {
 Orb::Orb(float sx, float sy, float px, float py) {
     x = sx; 
     y = sy;
-    w = 60; 
-    h = 60; 
+    w = 80; 
+    h = 80; 
     type = 0;
     spawnTime = GetTickCount();
     stateStartTime = spawnTime;
@@ -106,7 +106,7 @@ void Orb::update(Player& p) {
 
 void Orb::draw() {
     DWORD now = GetTickCount();
-    int baseR = (int)(30 * orbScale);
+    int baseR = (int)(40 * orbScale);
 
     // 配色：完全复用光柱色 COLOR_BEAM
     COLORREF colorMain = COLOR_BEAM;       // 淡黄色 RGB(255, 255, 224)
@@ -151,7 +151,7 @@ void Orb::draw() {
 Rect Orb::getRect() {
     // 只有生成完毕后才有碰撞判定
     if (state == SPAWNING) return { -100, -100, 0, 0 };
-    return { x - 30, y - 30, 60, 60 };
+    return { x - 40, y - 40, 80, 80 };
 }
 
 Sword::Sword(float startX, float startY, float _vx, float _vy, float _angle, bool isCurve) {
@@ -161,7 +161,7 @@ Sword::Sword(float startX, float startY, float _vx, float _vy, float _angle, boo
     speed = sqrt(vx * vx + vy * vy); // 记录预设速度
     spawnTime = GetTickCount();
     type = 1;
-    w = 150; h = 14;
+    w = 200; h = 14;
 
     // 根据波次决定弧线方向，产生交错旋转感
     // 或者简单给一个固定值。0.01f 左右是比较自然的弧线
@@ -242,7 +242,7 @@ void Sword::draw(){
     }
 
     // --- 使用你最满意的纯白核心几何体 ---
-    float totalLen = 150.0f;
+    float totalLen = 200.0f;
     float bladeW = 7.0f;
     float tipLen = 20.0f;
     float hiltLen = 25.0f;
@@ -253,6 +253,33 @@ void Sword::draw(){
     auto trans = [&](POINT p) -> POINT {
         return { (long)(x + p.x * cosA - p.y * sinA), (long)(y + p.x * sinA + p.y * cosA) };
         };
+
+    // 1. --- 绘制外发光层 (Glow) ---
+    // 只有在发射状态才显示强烈的辉光
+    if (state == SWORD_LAUNCH) {
+        // 使用比主体稍微宽一点的尺寸
+        float glowW = bladeW + 2.0f;
+        setfillcolor(RGB(200,200,200));
+
+        POINT gBody[] = { trans({(int)hiltLen - 4, (int)-glowW}), trans({(int)(totalLen - tipLen + 5), (int)-glowW}),
+                          trans({(int)(totalLen - tipLen + 5), (int)glowW}), trans({(int)hiltLen - 4, (int)glowW}) };
+        POINT gTip[] = { trans({(int)totalLen + 8, 0}), trans({(int)(totalLen - tipLen + 5), (int)-glowW}), trans({(int)(totalLen - tipLen + 5), (int)glowW}) };
+
+        solidpolygon(gBody, 4);
+        solidpolygon(gTip, 3);
+    }
+
+    // 2. --- 绘制描边细节 (Outline) ---
+    // 给纯白的主体加一层淡淡的金色描边，增加轮廓感
+    if (state == SWORD_PREVIEW) {
+        setlinecolor(RGB(100, 100, 100)); // 预览时灰色边
+        setfillcolor(RGB(160, 160, 160));
+    }
+    else {
+        setlinecolor(RGB(255, 200, 50));  // 发射时金边
+        setfillcolor(WHITE);
+    }
+    setlinestyle(PS_SOLID, 1);
 
     // 剑身组件
     POINT rBody[] = { trans({(int)hiltLen, (int)-bladeW}), trans({(int)(totalLen - tipLen), (int)-bladeW}),
@@ -268,6 +295,7 @@ void Sword::draw(){
     solidpolygon(rPommel, 4);
 
     if (state == SWORD_LAUNCH) {
+        setlinecolor(WHITE); // 确保内线是纯白的
         setlinestyle(PS_SOLID, 2);
         line(trans({ (int)hiltLen, 0 }).x, trans({ (int)hiltLen, 0 }).y, trans({ (int)totalLen - 10, 0 }).x, trans({ (int)totalLen - 10, 0 }).y);
         setlinestyle(PS_SOLID, 1);
@@ -291,7 +319,7 @@ Rect Sword::getRect(){
 Beam::Beam(float startX, float _speed) {
     x = startX;
     y = 0;
-    w = 50; h = WINDOW_H;
+    w = 100; h = WINDOW_H;
     speed = _speed;
     type = 2;
 }
@@ -354,8 +382,8 @@ void Laser::update(Player& p) {
     else if (state == LASER_FIRE) {
         // 爆发阶段 (0.5秒)：瞬间变粗，造成伤害
         // 宽度做一个弹性的动画：瞬间撑大，然后微缩
-        if (timeInState < 0.1f) currentWidth = 60.0f * (timeInState / 0.1f);
-        else currentWidth = 50.0f;
+        if (timeInState < 0.1f) currentWidth = 100.0f * (timeInState / 0.1f);
+        else currentWidth = 80.0f;
 
         if (timeInState > 0.5f) {
             state = LASER_FADE;
