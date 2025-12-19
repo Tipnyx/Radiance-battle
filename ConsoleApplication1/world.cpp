@@ -187,6 +187,7 @@ void LastSpike() {
                 if (player.y + player.h <= PLATFORM_Y + 10) {
                     player.vy = -9.0f;
                     player.jumpCount = 1;
+                    player.hasDashedInAir = false;
                 }
             }
         }
@@ -266,6 +267,7 @@ void SpikeManager(DWORD gameStartTime) {
                 if (player.y + player.h <= PLATFORM_Y + 10) {
                     player.vy = -9.0f;    // 向上弹起
                     player.jumpCount = 1;  // 刷新二段跳
+                    player.hasDashedInAir = false;
                 }
             }
         }

@@ -5,6 +5,7 @@ extern std::vector<Rect> platforms;
 
 Player::Player() {
     reset();
+    hasDashedInAir = false;
 }
 
 void Player::reset() {
@@ -18,6 +19,10 @@ void Player::reset() {
 void Player::update() {
     // 获取当前时间
     DWORD currentTime = GetTickCount();
+
+    if (onGround) {
+        hasDashedInAir = false; // 落地了，恢复空中冲刺能力
+    }
 
     // 1. 更新受伤无敌计时器
     if (hurtTimer > 0) {
@@ -145,10 +150,14 @@ void Player::update() {
     if (GetAsyncKeyState('C')) {
         bool canNormal = (currentTime - lastNormalDashTime > NORMAL_DASH_COOLDOWN);
 
-        if (!isDashing && !isAttacking && canNormal) {
+        if (!isDashing && !isAttacking && canNormal && (!hasDashedInAir || onGround)) {
             isDashing = true;
             dashStartTime = currentTime;
             lastNormalDashTime = currentTime;
+
+            if (!onGround) {
+                hasDashedInAir = true; // 只要在空中冲了，就锁上
+            }
 
             if (canShadowDash) {
                 // 触发暗影冲刺

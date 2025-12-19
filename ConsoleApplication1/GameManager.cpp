@@ -66,6 +66,7 @@ void AttackBoss() {
 			if (player.attackDir == 2) {
 				player.vy = -7.0f; // 反弹效果
 				player.jumpCount = 1;  // 刷新二段跳
+                player.hasDashedInAir = false;
 			}
 
             // 以后可以在这里加“回魂”逻辑
@@ -145,6 +146,7 @@ void ProjectileManager() {
             if (pogoHit) {
                 player.vy = -7.0f;
                 player.jumpCount = 1;  // 刷新二段跳
+                player.hasDashedInAir = false;
                 //这里可以加个音效提示 Pogo 成功
             }
 

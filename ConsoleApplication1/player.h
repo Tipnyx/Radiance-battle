@@ -26,6 +26,7 @@ public:
     bool canDash = true;
     DWORD dashStartTime = 0;
     DWORD lastShadowDashTime = 0;
+    bool hasDashedInAir; // 记录是否已经在空中冲刺过
 
     const int DASH_DURATION = 300; // ms
     const int SHADOW_DASH_COOLDOWN = 1500; // 暗影冲刺冷却 (1.5s)
