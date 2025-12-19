@@ -2,6 +2,7 @@
 # include"projectile.h"
 # include"player.h"
 
+
 extern std::vector<Projectile*> projectiles;
 extern Player player;
 extern Boss boss;
@@ -69,8 +70,8 @@ void Boss::draw() {
 
         // 这里只需要画一个简化的太阳主体作为残影，否则性能消耗太大
         for (int k = 0; k < 60; k += 10) {
-            setfillcolor(Fade(RGB(255, 180 - k, 100 - k), trailAlpha));
-            solidcircle(tx, ty, 80 - k);
+                setfillcolor(Fade(RGB(255, 180 - k, 100 - k), trailAlpha));
+                solidcircle(tx, ty, 80 - k);
         }
     }
 
@@ -127,8 +128,15 @@ void Boss::draw() {
 
     // 2. 主体像个太阳
     for (int i = 0; i < 90; i++) {
-        setfillcolor(Fade(RGB(255, 192 - i, 107 - i),alpha));
-        solidellipse(cx - 90+i, cy - 90+i, cx + 90-i, cy + 90-i);
+        if (boss.boss_is_invincible)
+        {
+            setfillcolor(Fade(RGB(255, 255 - i, 255 - i), alpha));
+            solidellipse(cx - 90 + i, cy - 90 + i, cx + 90 - i, cy + 90 - i);
+        }
+        else{
+            setfillcolor(Fade(RGB(255, 192 - i, 107 - i), alpha));
+            solidellipse(cx - 90 + i, cy - 90 + i, cx + 90 - i, cy + 90 - i);
+        }
     }
     setfillcolor(NULL);
 	setlinecolor(Fade(RGB(255, 112, 17),alpha));
@@ -138,8 +146,16 @@ void Boss::draw() {
 }
 
 Rect Boss::getRect() {
-   
     return { x - 90,y - 90, 180,180 };
+}
+
+void Boss::reset() {
+	hp = 1000;
+	x = WINDOW_W / 2;
+	y = -50;
+	alpha = 0.0f;
+	isTeleporting = false;
+	trails.clear();
 }
 
 void Boss::drawDebug() {
@@ -148,10 +164,16 @@ void Boss::drawDebug() {
     //setfillstyle(BS_NULL); // 无填充
     Rect r = getRect();
     rectangle((int)r.x, (int)r.y, (int)(r.x + r.w), (int)(r.y + r.h));
+    
+    settextcolor(WHITE);
+    settextstyle(20, 0, _T("Consolas"));
+    TCHAR s[50];
+    _stprintf_s(s, _T("BOSS HP: %d"), boss.hp);
+    outtextxy(10, 100, s);
 }
 
 void Boss::SpawnSwordWallHorizontal(bool fromLeft) {
-    printf("横剑\n");
+    //printf("横剑\n");
 	// 先定义一下画横剑的参数,startX,vx, angle,这都是好直接确定的
     float startX = fromLeft ? -100.0f : WINDOW_W + 100.0f; // 从左还是从右，初始坐标
     float vx = fromLeft ? 11.0f : -11.0f; // 对应的速度方向
@@ -178,7 +200,7 @@ void Boss::SpawnSwordWallHorizontal(bool fromLeft) {
 }
 
 void Boss::SpawnSwordWallVertical() {
-    printf("竖剑\n");
+    //printf("竖剑\n");
 	int totalSwords = 20; // 定义多少把剑
 	float spacing = 75.0f; // 剑之间的间隔多大
     int gapStart = 2;
@@ -199,7 +221,7 @@ void Boss::SpawnSwordWallVertical() {
 }
 
 void Boss::SpawnOrbs() {
-    printf("光球\n");
+    //printf("光球\n");
     const float minDist = 200.0f; //最小距离
     float ox, oy;
     int tryCount = 0;
@@ -219,7 +241,7 @@ void Boss::SpawnOrbs() {
 }
 
 void Boss::SpawnBeam() {
-    printf("光柱\n");
+    //printf("光柱\n");
     bool fromLeft = rand() % 2 == 0;
     float startX = fromLeft ? -100.0f : WINDOW_W + 100.0f;
     float spd = fromLeft ? 10.0f : -10.0f;
@@ -227,7 +249,7 @@ void Boss::SpawnBeam() {
 }
 
 void Boss::SpawnSwordBurst() {
-    printf("脸刺\n");
+    //printf("脸刺\n");
     int count = 12; // 保持 12 根
     float startRadius = 60.0f;
 
@@ -253,7 +275,7 @@ void Boss::SpawnSwordBurst() {
 // 三连激光
 
 void Boss::SpawnLaserBurst() {
-    printf("辐射激光 - 第 %d 波\n", laserWaveCount + 1);
+    //printf("辐射激光 - 第 %d 波\n", laserWaveCount + 1);
 
     int count = 8; // 一圈 8 条激光，构成全方位封锁
     float step = (2 * 3.14159f) / count; // 每条激光间隔 45 度 (360 / 8)
@@ -392,7 +414,7 @@ void Boss::BossAI() {
             } while (attackType == lastAttack);
         }
 
-        printf("[AI] pick attackType = %d\n", attackType);
+        //printf("[AI] pick attackType = %d\n", attackType);
 
         // 光球攻击
         if (attackType == 0) {
@@ -431,7 +453,7 @@ void Boss::BossAI() {
         else if (attackType == 6) {
             targetX = WINDOW_W * (rand() % 3 + 1) / 4; // 计算目标四分点
             isTeleporting = true; // 开启位移状态
-            printf("[AI] Teleport to targetX = %f\n", targetX);
+            //printf("[AI] Teleport to targetX = %f\n", targetX);
         }
         
     }

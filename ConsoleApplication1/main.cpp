@@ -20,7 +20,6 @@ bool debug_mode = false; // 全局调试开关
 SpikeState currentSpikeState = SPIKE_HIDDEN;
 bool spikeOnLeft = true;            // 当前在哪一侧
 DWORD spikeTimer = 0;               // 用于计算状态持续时间的状态计时器
-DWORD gameGlobalTime = 0;           // 记录游戏开始时间
 
 Boss boss;
 Player player;
@@ -29,8 +28,8 @@ std::vector<Projectile*> projectiles;
 int waveCount = 0;
 
 int main() {
-
     DWORD gameStartTime = GetTickCount();
+	printf("游戏开始时间：%lu ms\n", gameStartTime);
     initgraph(WINDOW_W, WINDOW_H); // 初始化窗口
 
     MCIERROR err = mciSendString(L"open \"output.mp3\" type mpegvideo alias bgm", NULL, 0, NULL); // 播放背景音乐
@@ -47,7 +46,7 @@ int main() {
     setbkcolor(COLOR_BG);
 
     while (true) {
-		// 1. 逻辑更新
+		// 1. 主逻辑更新
 		GameLogic(gameStartTime);
         // 2. 绘图
         cleardevice();

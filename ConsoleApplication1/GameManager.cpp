@@ -7,18 +7,34 @@ extern Player player;
 extern Boss boss;
 extern std::vector<Projectile*> projectiles;
 
+#include <mmsystem.h>
+#pragma comment(lib,"winmm.lib")
+
 /* 重置游戏:
 玩家重置
 删除所有弹幕
 重置计时器
 重置地刺状态
 */
-void GameReset(DWORD gameStartTime) {
+void GameReset(DWORD& gameStartTime) {
+    
     // 死亡重开
+	//printf("玩家在 %lu ms 死亡，重置游戏状态\n", GetTickCount() - gameStartTime);
     player.reset();
+    boss.reset();
     for (auto p : projectiles) delete p;
     projectiles.clear();
     gameStartTime = GetTickCount();
+
+    // 2. 重置音乐
+    // 停止当前播放
+    mciSendString(L"stop bgm", NULL, 0, NULL);
+    // 将进度条拖回 0 (开头)
+    mciSendString(L"seek bgm to start", NULL, 0, NULL);
+    // 重新开始循环播放
+    mciSendString(L"play bgm repeat", NULL, 0, NULL);
+
+	//printf("游戏重置完成，目前游戏时间点处于：%lu ms\n", gameStartTime);
     // 重置地刺
     currentSpikeState = SPIKE_HIDDEN;
     spikeTimer = 0;
@@ -26,15 +42,35 @@ void GameReset(DWORD gameStartTime) {
 
 /* 此函数实现玩家攻击BOSS的判定,及攻击到后的行为*/
 void AttackBoss() {
-    if (player.isAttacking) {
-        Rect bRect = { boss.x - 50, boss.y - 60, 100, 120 }; // BOSS 的碰撞盒
-        if (player.attackBox.checkCollision(bRect)) {
-            boss.hp -= 2; // 掉血
-            // 以后可以在这里加“回魂”逻辑
+    int hittime = GetTickCount(); //获取当前时间点
 
+    if (hittime - boss.boss_invincible_start_time >= boss.BOSS_INVINCIBLE_DURATION) { // 如果距离上次无敌时间点已经过了0.45秒
+        boss.boss_is_invincible = false; // 将boss设置为非无敌
+    }
+
+    if (player.isAttacking) {
+        Rect bRect = boss.getRect(); // BOSS 的碰撞盒
+
+        if (player.attackBox.checkCollision(bRect)) { //打中boss了
+
+            if (!boss.boss_is_invincible) { // 如果此时boss不无敌
+                boss.hp -= 20; // 掉血 
+                //printf("bossHP:%d", boss.hp);
+				boss.boss_is_invincible = true; //将boss设置为无敌
+                boss.boss_invincible_start_time = GetTickCount(); // 获取打中boss后，且boss不无敌的时间点
+            }
+
+            // 下劈判定
+			if (player.attackDir == 2) {
+				player.vy = -7.0f; // 反弹效果
+				player.jumpCount = 1;  // 刷新二段跳
+			}
+
+            // 以后可以在这里加“回魂”逻辑
+            
             // 攻击瞬间的顿帧效果
             if (player.atkTimer == player.atkDuration - 1) { // 只在第一帧停顿
-                // Sleep(10); 
+                 Sleep(50); 
             }
         }
     }
@@ -148,18 +184,21 @@ BOSS出招判定
 管理弹幕等功能
 以及玩家HP小于0后的重置逻辑
 */
-void GameLogic(DWORD gameStartTime) {
+void GameLogic(DWORD& gameStartTime) {
     if (player.hp > 0) {
         // 1. 更新逻辑
 		player.update(); // 玩家动画和状态更新
-        boss.update(); // BOSS动画
+        boss.update(); // BOSS 动画
 		boss.BossAI(); // BOSS 出招判定
 
         AttackBoss(); // 玩家攻击 BOSS 的判定
         ProjectileManager(); //管理弹幕
     }
     else {
-        GameReset(gameStartTime);
+        if (GetAsyncKeyState('R') & 0x8000){
+            GameReset(gameStartTime);
+        }
+        
     }
 }
 

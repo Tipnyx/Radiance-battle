@@ -45,6 +45,11 @@ public:
     int laserWaveCount = 0;
     DWORD lastLaserTime = 0;
 
+    // 受击相关
+	bool boss_is_invincible = false;
+	DWORD boss_invincible_start_time = 0;
+	const int BOSS_INVINCIBLE_DURATION = 450; // BOSS受击无敌时间450ms
+
     Boss();
     void update();
     void draw();
@@ -58,6 +63,7 @@ public:
 
     virtual Rect getRect();
 	void drawDebug();
+    void reset();
 
     void BossAI();
 };

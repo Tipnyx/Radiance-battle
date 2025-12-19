@@ -89,6 +89,7 @@ void DrawUI() {
         outtextxy(WINDOW_W / 2 - 150, WINDOW_H / 2 - 30, _T("YOU DIED"));
     }
     setlinestyle(PS_SOLID, 1);
+
 }
 
 void DrawPlatform() {
