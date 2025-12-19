@@ -22,11 +22,15 @@ void GenerateStairs() {
     float startX = WINDOW_W / 2 ;     // 屏幕水平中心
     float currentY = PLATFORM_Y - 250; // 第一级台阶的高度
 
-    make_one_stair(681, 450, 150, 50);
-    make_one_stair(500, 200, 150, 50);
-    make_one_stair(120, 50, 150, 50);
-    make_one_stair(800, 0, 75, 50);
+    make_one_stair(681, 450, 150, 50); // 第一级台阶
 
+    //后面的都是二阶段用的平台
+    make_one_stair(500, 200, 175, 50);
+    make_one_stair(120, 50, 175, 50);
+    make_one_stair(800, 0, 100, 50);
+    make_one_stair(480, -300, 175, 50);
+    make_one_stair(0, -200, 100, 50);
+    make_one_stair(980, -280, 100, 50);
 }
 
 void InitPlatform(){

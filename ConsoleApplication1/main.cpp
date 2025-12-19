@@ -29,6 +29,7 @@ int waveCount = 0;
 
 float cameraX = 0;
 float cameraY = 0;
+float currentLevelBottom = WINDOW_H;
 
 int main() {
     DWORD gameStartTime = GetTickCount();

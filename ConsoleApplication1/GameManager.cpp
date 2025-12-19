@@ -234,6 +234,11 @@ void DrawEntities() {
 
 
 void UpdateCamera(Player& p) {
+
+    if (p.y < 200 && currentLevelBottom > 400) {
+        currentLevelBottom = 400; // 抬高底线 (注意 Y 越小越高，所以是赋值更小的值)
+    }
+
     // 目标：让玩家处于屏幕中心
 	// 被减数：想要以它为中心的那个实体的坐标；
 	// 减数：那个中心物体在屏幕上的位置
@@ -251,10 +256,13 @@ void UpdateCamera(Player& p) {
         // 目标是让玩家保持在屏幕垂直中心偏下一点的位置
         float targetY = p.y - WINDOW_H * 0.6f;
 
+        float maxCamY = currentLevelBottom - WINDOW_H;
         // 限制一下，别让镜头掉到地底下去
-        if (targetY > 0) targetY = 0;
+        if (targetY > maxCamY) targetY = maxCamY;
 
-        // 平滑跟随
-        cameraY += (targetY - cameraY) * 0.1f;
+        cameraY += (targetY - cameraY) * 0.05f;
+
+        // 双重保险：插值后如果还是超了，强制拉回来
+        //if (cameraY > maxCamY) cameraY = maxCamY;
     }
 }

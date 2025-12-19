@@ -270,12 +270,21 @@ void Player::update() {
     }
 
     // 掉出屏幕重置 (虚空伤害)
-    if (y > WINDOW_H) {
+    if (y > currentLevelBottom - 25 ) {
         hp--;
         hurtTimer = HURT_DURATION;
         isInvincible = true;
-        x = WINDOW_W / 2;
-        y = PLATFORM_Y - h - 100;
+
+        if (currentLevelBottom <= 400) {
+            x = 550; // 或者新平台的 x
+            y = 100; // 重生在 y=200 的平台上方
+        }
+        else {
+            // 否则重生在地面
+            x = WINDOW_W / 2;
+            y = PLATFORM_Y - h - 100;
+        }
+
         vx = 0; vy = 0;
         jumpCount = 0;
     }

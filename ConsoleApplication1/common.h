@@ -49,6 +49,9 @@ const int DURATION_ACTIVE = 8000;       // 攻击持续 8秒 (总共10秒一轮)
 extern float cameraX;
 extern float cameraY;
 
+// 当前关卡的最低底线 (初始设为屏幕高度，或者大一点的值如 800)
+extern float currentLevelBottom;
+
 // 结构体：矩形碰撞箱
 struct Rect {
     float x, y, w, h; // x,y是矩形的左上角坐标
