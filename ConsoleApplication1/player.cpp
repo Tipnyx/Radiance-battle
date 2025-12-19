@@ -419,6 +419,27 @@ void Player::draw() {
         // 绘制
         solidpolygon(pts, SAMPLE_COUNT * 2);
     }
+
+    if (debug_mode) {
+        settextcolor(RGB(0, 255, 0)); // 用亮绿色，显眼
+        settextstyle(20, 0, _T("Consolas")); // 字号 20，清晰
+        setbkmode(TRANSPARENT); // 文字背景透明
+
+        TCHAR s[64];
+        // 显示绝对坐标 (World Pos)，这就是你要填进 GenerateStairs 里的 x 和 y
+        _stprintf_s(s, _T("(%.0f, %.0f)"), x, y + h); // y+h 显示的是脚底板的坐标，更适合对齐台阶
+
+        // 画在玩家头顶上方 30 像素处
+        // 注意：绘图位置必须减去 cameraX/Y，否则文字会跟着地图跑而不是跟着人跑
+        outtextxy((int)(x - cameraX - 20), (int)(y - cameraY - 30), s);
+
+        // 可选：顺便画个十字准星标出脚底中心，方便对齐
+        setlinecolor(RED);
+        int footX = (int)(x - cameraX + w / 2);
+        int footY = (int)(y - cameraY + h);
+        line(footX - 10, footY, footX + 10, footY);
+        line(footX, footY - 10, footX, footY + 10);
+    }
 }
 
 Rect Player::getHitbox() {

@@ -1,7 +1,7 @@
 # include"boss.h"
 # include"projectile.h"
 # include"player.h"
-
+# include"world.h"
 
 extern std::vector<Projectile*> projectiles;
 extern Player player;
@@ -32,7 +32,7 @@ void Boss::update() {
     }
     // 简单的悬浮律动 (正弦波)
 
-    // 2. 新增：平滑水平位移逻辑
+    // 平滑水平位移逻辑
     if (isTeleporting) {
         // 使用 Lerp 公式：当前位置 += (目标 - 当前) * 速度因子
         // 0.15f 这个值越大，移动越快；越小，拖尾越长越慢
@@ -57,22 +57,47 @@ void Boss::update() {
             trails.erase(trails.begin());
         }
     }
+
+    // --- 死亡转场逻辑 ---
+    if (hp <= 0 && active) {
+        // 1. Boss 消失
+        active = false;
+
+        PhaseTwo = true;
+
+        // 2. 停止所有攻击状态
+        isFinalPhase = false;
+        orbAttackActive = false;
+        swordAttackActive = false;
+        burstAttackActive = false;
+        laserAttackActive = false;
+
+        // 3. 清理地刺 (重要！否则玩家没法走)
+        currentSpikeState = SPIKE_HIDDEN;
+
+        // 4. 触发阶梯生成 (我们需要在 world.h 里声明这个函数)
+        GenerateStairs();
+
+        // 5. 可以在这里播放一个震屏或者音效，增加仪式感
+        // PlaySound(...);
+        return;
+    }
     
 }
 
 void Boss::InitSunCache() {
     // 创建一个足够大的画布 (比如 200x200)
-    sunCache.Resize(200, 200);
+    sunCache.Resize(300, 300);
 
     // 切换绘图目标到这张图片上
     SetWorkingImage(&sunCache);
 
     // 把你原来的太阳绘制逻辑搬过来，坐标改为图片中心 (100, 100)
-    int mid = 100;
+    int mid = 150;
     for (int i = 0; i < 90; i++) {
         // 注意：这里先不要 Fade，alpha 留到贴图时整体处理
         setfillcolor(RGB(255, 192 - i, 107 - i));
-        solidellipse(mid - 90 + i, mid - 90 + i, mid + 90 - i, mid + 90 - i);
+        solidellipse(mid - 125 + i, mid - 125 + i, mid + 125 - i, mid + 125 - i);
     }
 
     // 恢复绘图目标为屏幕
@@ -85,7 +110,7 @@ void Boss::InitHitCache() {
 	int mid = 150;
 	for (int i = 0; i < 45; i++) {
 		setfillcolor(RGB(255, 255 - 2 * i, 255 - 2 * i));
-		solidellipse(mid - 90 + i, mid - 90 + i, mid + 90 - i, mid + 90 - i);
+		solidellipse(mid - 125 + i, mid - 125 + i, mid + 125 - i, mid + 125 - i);
 	}
 	SetWorkingImage(NULL);
 }
@@ -103,21 +128,21 @@ void Boss::draw() {
         // 这里只需要画一个简化的太阳主体作为残影，否则性能消耗太大
         for (int k = 0; k < 60; k += 10) {
                 setfillcolor(Fade(RGB(255, 180 - k, 100 - k), trailAlpha));
-                solidcircle(tx - cameraX, ty - cameraY, 80 - k);
+                solidcircle(tx - cameraX, ty - cameraY, 110 - k);
         }
     }
 
-	// --- 正常绘制 Boss 本体 ---
+
     int cx = (int)x;
     int cy = (int)y;
-    int r = 150;
+    int r = 185;
     // 1. 旋转背景
 
     for (int j = 0; j < 3; j++) {
         setlinecolor(Fade(RGB(240, 240, 240),alpha));
         setlinestyle(PS_SOLID, 5);
         setfillcolor(NULL);
-        circle(cx - cameraX, cy - cameraY, 90 + 30 * j);
+        circle(cx - cameraX, cy - cameraY, 125 + 30 * j);
     }
 
     for (int i = 0; i < 8; i++) {
@@ -161,7 +186,7 @@ void Boss::draw() {
     // SRCPAINT参数会将太阳图片和原有的主体进行了位运算
 	// 会去掉黑色背景，同时把太阳的亮色部分叠加上去
 	// 造成某种视觉上的发光效果，透明感，能量体的感觉
-    putimage(x-100 - cameraX, y-100 - cameraY, &sunCache,SRCPAINT);
+    putimage(x-150 - cameraX, y-150 - cameraY, &sunCache,SRCPAINT);
 
     if (boss.boss_is_invincible){
 		putimage(x - 150 - cameraX, y - 150 - cameraY, &hitCache, SRCPAINT);
@@ -176,7 +201,7 @@ void Boss::draw() {
 }
 
 Rect Boss::getRect() {
-    return { x - 90,y - 90, 180,180 };
+    return { x - 125,y - 125, 250,250 };
 }
 
 void Boss::reset() {
@@ -345,6 +370,10 @@ void Boss::BossAI() {
     }
     
     DWORD currentTime = GetTickCount();
+
+    if (PhaseTwo) {
+        return;
+    }
 
     // --- 三阶段触发判定 ---
     if (hp <= 200 && !isFinalPhase) {

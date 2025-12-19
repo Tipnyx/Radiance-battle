@@ -9,11 +9,12 @@ struct TrailPoint {
 class Boss {
 public:
     float x, y;
-    int hp = 1000;
+    int hp = 10;
     bool active = true;
     float alpha = 0; // 用于进场时的渐显效果
 
     bool isFinalPhase = false; // 是否进入三阶段
+    bool PhaseTwo = false;
 
     DWORD lastAttackTime = 0;
     DWORD lastOrbTime = 0;

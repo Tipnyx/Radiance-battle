@@ -5,9 +5,9 @@
 // --- 常量定义 ---
 const int WINDOW_W = 1262;
 const int WINDOW_H = 780;
-const int PLATFORM_Y = 718;
+const int PLATFORM_Y = 700;
 const int PLATFORM_W = 1135;
-const int PLATFORM_H = 62;
+const int PLATFORM_H = 80;
 const int PLATFORM_X = (WINDOW_W - PLATFORM_W) / 2;
 
 // 颜色
@@ -22,7 +22,7 @@ const COLORREF COLOR_BG = RGB(135, 206, 235); // 天空蓝
 // 物理常量
 const float GRAVITY = 1.0f;
 const float MOVE_SPEED = 6.0f;
-const float JUMP_FORCE = -17.0f;
+const float JUMP_FORCE = -18.0f;
 const float DASH_SPEED = 15.0f;
 
 const int ORB_ATTACK_TOTAL = 3;    // 一次攻击发射3个

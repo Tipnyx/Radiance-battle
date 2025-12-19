@@ -49,14 +49,15 @@ int main() {
     IMAGE img_bg;
 	loadimage(&img_bg, _T("background.png"), WINDOW_W + 200, WINDOW_H);
     //putimage((int)(-cameraX * 0.3f), 0, &img_bg);
-
+    InitPlatform();
+    
     while (true) {
 		// 1. 主逻辑更新
 		GameLogic(gameStartTime);
         // 2. 绘图
         cleardevice();
 
-        InitPlatform();
+        
         putimage((int)(-cameraX * 0.3f - 100), 0, &img_bg);
         DrawEntities(); // 画实体
         DrawPlatform(); //画平台

@@ -4,6 +4,31 @@
 
 std::vector<Rect> platforms; // 定义
 
+void make_one_stair(int X,int Y,int W,int H) {
+    Rect platform;
+    platform.x = X;
+    platform.y = Y;
+    platform.w = W;
+    platform.h = H;
+    platforms.push_back(platform);
+}
+
+void GenerateStairs() {
+    // 1. 清空原来的攻击物 (可选，防止残留的剑伤到玩家)
+    // projectiles.clear(); 
+
+    // 2. 生成阶梯
+    // 从地面上方一点开始
+    float startX = WINDOW_W / 2 ;     // 屏幕水平中心
+    float currentY = PLATFORM_Y - 250; // 第一级台阶的高度
+
+    make_one_stair(681, 450, 150, 50);
+    make_one_stair(500, 200, 150, 50);
+    make_one_stair(120, 50, 150, 50);
+    make_one_stair(800, 0, 75, 50);
+
+}
+
 void InitPlatform(){
     platforms.clear();
     platforms.push_back({ (float)PLATFORM_X, (float)PLATFORM_Y, (float)PLATFORM_W, 500 });
@@ -101,56 +126,73 @@ void DrawUI() {
 
 }
 
-void DrawPlatform() {
-    // --- 画平台逻辑 (圆角黑曜石风格) ---
-    
-    int r = 15; // 圆角半径 (控制圆滑程度，值越大越圆)
+// 辅助函数：专门画一个单独的平台块 (把原来 DrawPlatform 的逻辑搬进来了)
+void DrawSinglePlatform(const Rect& r) {
+    int radius = 15;
 
-    // 1. 绘制高光底板 (Highlight Layer)
-        // 这一层画在下面，颜色稍亮。因为上面的层会向下偏移，所以这层的顶部会露出来形成高光倒角。
-    setfillcolor(RGB(60, 70, 90)); // 亮蓝灰色
-    solidroundrect(PLATFORM_X - cameraX, PLATFORM_Y - cameraY, PLATFORM_X + PLATFORM_W - cameraX, PLATFORM_Y + PLATFORM_H - cameraY, r, r);
+    // 1. 底板
+    setfillcolor(RGB(60, 70, 90));
+    solidroundrect((int)r.x - cameraX, (int)r.y - cameraY, (int)(r.x + r.w - cameraX), (int)(r.y + r.h - cameraY), radius, radius);
 
-    // 2. 绘制主体层 (Body Layer)
-    // 这一层颜色深，向下偏移 4 像素，覆盖住底板的下半部分
-    setfillcolor(RGB(20, 24, 35)); // 深邃暗色
-    // 注意：y 坐标 +4，但高度保持一致，这样底部也会覆盖住底板（因为底板也是圆角，重叠起来刚好）
-    solidroundrect(PLATFORM_X - cameraX, PLATFORM_Y + 4 - cameraY, PLATFORM_X - cameraX + PLATFORM_W, PLATFORM_Y - cameraY + PLATFORM_H, r, r);
+    // 2. 主体
+    setfillcolor(RGB(20, 24, 35));
+    solidroundrect((int)r.x - cameraX, (int)r.y + 4 - cameraY, (int)(r.x + r.w - cameraX), (int)(r.y + r.h - cameraY), radius, radius);
 
-    int padding = 10; // 纹理向内缩进，防止画到圆角外面
+    // 3. 纹理绘制 (关键修复点！)
+    if (r.w * r.h > 200) { // 太小的台阶直接不画纹理，省事又安全
 
-    for (int i = 0; i < 300; i++) {
-        int rx = PLATFORM_X + padding + rand() % (PLATFORM_W - 2 * padding);
-        int ry = PLATFORM_Y + 6 + rand() % (PLATFORM_H - 8 - padding); // 从高光下方开始
+        int dotCount = (int)(r.w * r.h / 400);
+        if (dotCount < 3) dotCount = 3;
+        if (dotCount > 50) dotCount = 50;
 
-        int type = rand() % 3;
-        if (type == 0) {
-            // 亮斑
-            setfillcolor(RGB(70, 80, 100));
-            solidcircle(rx - cameraX, ry - cameraY, 1); // 改用圆点，更细腻
-        }
-        else if (type == 1) {
-            // 暗坑
-            setfillcolor(RGB(10, 12, 18));
-            solidcircle(rx - cameraX, ry - cameraY, 1);
+        int padding = 5; // 强制使用较小的 padding
+
+        // --- 安全计算范围 ---
+        // 这里的 rangeX 和 rangeY 必须保证大于 0
+        int rangeX = (int)r.w - 2 * padding;
+        int rangeY = (int)r.h - 8 - padding; // 针对高度特别小的台阶
+
+        if (rangeX > 0 && rangeY > 0) { // 【绝对防御】只有范围合法才画点
+            for (int i = 0; i < dotCount; i++) {
+                int rx = (int)r.x + padding + rand() % rangeX;
+                int ry = (int)r.y + 6 + rand() % rangeY;
+
+                int type = rand() % 3;
+                if (type == 0) {
+                    setfillcolor(RGB(70, 80, 100));
+                    solidcircle(rx - cameraX, ry - cameraY, 1);
+                }
+                else if (type == 1) {
+                    setfillcolor(RGB(10, 12, 18));
+                    solidcircle(rx - cameraX, ry - cameraY, 1);
+                }
+            }
         }
     }
 
-    // 4. 添加裂痕 (范围限制)
-    setlinecolor(RGB(45, 50, 70));
-    for (int i = 0; i < 12; i++) {
-        int sx = PLATFORM_X + padding + rand() % (PLATFORM_W - 2 * padding);
-        int sy = PLATFORM_Y + 10 + rand() % (PLATFORM_H - 20);
-        int len = 10 + rand() % 30;
-        line(sx - cameraX, sy - cameraY, sx - cameraX + len, sy - cameraY + (rand() % 3 - 1));
+    // 4. 裂痕 (只在大台阶画)
+    if (r.w > 100 && r.h > 40) { // 加个高度限制，防止在薄台阶上画出界
+        setlinecolor(RGB(45, 50, 70));
+        for (int i = 0; i < 3; i++) {
+            int sx = (int)r.x + 5 + rand() % ((int)r.w - 10);
+            int sy = (int)r.y + 10 + rand() % ((int)r.h - 20);
+            int len = 10 + rand() % 20;
+            line(sx - cameraX, sy - cameraY, sx - cameraX + len, sy - cameraY + (rand() % 3 - 1));
+        }
     }
 
-    // 5. 边缘描边
-    setlinecolor(RGB(40, 50, 70)); // 很淡的描边
+    // 5. 描边
+    setlinecolor(RGB(40, 50, 70));
     setlinestyle(PS_SOLID, 1);
-    //setfillcolor(NULL); // 不填充，只画框
-    roundrect(PLATFORM_X - cameraX, PLATFORM_Y + 4 - cameraY, PLATFORM_X + PLATFORM_W - cameraX, PLATFORM_Y + PLATFORM_H - cameraY, r, r);
+    setfillstyle(BS_NULL);
+    roundrect((int)r.x - cameraX, (int)r.y + 4 - cameraY, (int)(r.x + r.w - cameraX), (int)(r.y + r.h - cameraY), radius, radius);
     setfillstyle(BS_SOLID);
+}
+
+void DrawPlatform() {
+    for (const auto& p : platforms) {
+        DrawSinglePlatform(p);
+    }
 }
 
 void LastSpike() {
@@ -203,7 +245,7 @@ void SpikeManager(DWORD gameStartTime) {
     // 1. 状态机更新逻辑
     if (currentSpikeState == SPIKE_HIDDEN) {
 		// boss 血量低于 650 -> 进入预警状态
-        if (boss.hp < 650) {
+        if (boss.hp < 650 && !boss.PhaseTwo) {
             currentSpikeState = SPIKE_WARNING;
             spikeTimer = now;
             spikeOnLeft = true; // 第一次总是出现在左边
@@ -224,8 +266,6 @@ void SpikeManager(DWORD gameStartTime) {
             spikeOnLeft = !spikeOnLeft; // 换边
         }
     }
-
-    
 
     // 2. 确定当前地刺的区域
     Rect currentSpikeRect = { 0, 0, 0, 0 };

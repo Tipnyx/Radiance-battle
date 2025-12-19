@@ -238,16 +238,23 @@ void UpdateCamera(Player& p) {
 	// 被减数：想要以它为中心的那个实体的坐标；
 	// 减数：那个中心物体在屏幕上的位置
     float targetX = p.x - (WINDOW_W / 2.0f);
-    float targetY = p.y - (PLATFORM_Y - p.h);
-
-    // 平滑跟随 (0.1f 是跟随速度)
     cameraX += (targetX - cameraX) * 0.1f;
-    cameraY += (targetY - cameraY) * 0.1f;
-    cameraY = 0;
+    if (cameraX < -200) cameraX = -200;
+    if (cameraX > 200) cameraX = 200;
 
-    // 限制镜头边界（防止看到地图外的黑边）
-     if (cameraX < -200) cameraX = -200;
-	 if (cameraX > 200) cameraX = 200;
-	 //if (cameraX > WINDOW_W * 3.0f / 4.0f) cameraX = WINDOW_W * 3.0f / 4.0f;
-    // if (cameraX > MAP_WIDTH - WINDOW_W) cameraX = ...
+    if (boss.active) {
+        float targetY = 0;
+        cameraY += (targetY - cameraY) * 0.1f;
+    }
+    else {
+        // Boss 消失了 (进入攀爬阶段) -> 开启 Y 轴自由跟随
+        // 目标是让玩家保持在屏幕垂直中心偏下一点的位置
+        float targetY = p.y - WINDOW_H * 0.6f;
+
+        // 限制一下，别让镜头掉到地底下去
+        if (targetY > 0) targetY = 0;
+
+        // 平滑跟随
+        cameraY += (targetY - cameraY) * 0.1f;
+    }
 }
