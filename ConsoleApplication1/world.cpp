@@ -2,6 +2,13 @@
 #include"player.h"
 #include"boss.h"
 
+std::vector<Rect> platforms; // 定义
+
+void InitPlatform(){
+    platforms.clear();
+    platforms.push_back({ (float)PLATFORM_X, (float)PLATFORM_Y, (float)PLATFORM_W, 500 });
+}
+
 void DrawSpikes(float x, float y, float w, float h) {
     // --- 配色方案 (与白色光剑保持一致) ---
     COLORREF colorGlow = RGB(255, 120, 20);  // 最外层橙色辉光

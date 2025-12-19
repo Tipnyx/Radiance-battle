@@ -58,3 +58,5 @@ struct Rect {
             y < other.y + other.h && y + h > other.y;
     }
 };
+
+extern std::vector<Rect> platforms; // 全局平台列表

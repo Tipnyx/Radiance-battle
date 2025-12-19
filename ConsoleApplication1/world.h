@@ -2,6 +2,8 @@
 #include "common.h"
 #include<ctime>
 
+void InitPlatform();
+
 void DrawSpikes(float x, float y, float w, float h);
 
 void DrawPlatform();

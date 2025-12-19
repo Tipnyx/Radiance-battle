@@ -56,6 +56,7 @@ int main() {
         // 2. 绘图
         cleardevice();
 
+        InitPlatform();
         putimage((int)(-cameraX * 0.3f - 100), 0, &img_bg);
         DrawEntities(); // 画实体
         DrawPlatform(); //画平台

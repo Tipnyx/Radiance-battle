@@ -1,6 +1,8 @@
 # include"common.h"
 # include"player.h"
 
+extern std::vector<Rect> platforms;
+
 Player::Player() {
     reset();
 }
@@ -49,13 +51,13 @@ void Player::update() {
             vx = facing * DASH_SPEED; // 冲刺期间强制位移
             vy = 0; // 冲刺期间不受重力
             isInvincible = isShadowDash || (hurtTimer > 0); // 冲刺期间无敌
-            x += vx;
-            if (currentTime - lastGhostTime > 30) {
-                // 初始生命值给满 (255)，让它存在感更强
-                ghosts.push_back({ x, y, 255 });
-                lastGhostTime = currentTime;
-            }
-            return; // 冲刺时不处理常规移动
+            //x += vx;
+            //if (currentTime - lastGhostTime > 30) {
+            //    // 初始生命值给满 (255)，让它存在感更强
+            //    ghosts.push_back({ x, y, 255 });
+            //    lastGhostTime = currentTime;
+            //}
+            //return; // 冲刺时不处理常规移动
         }
     }
     else {
@@ -72,78 +74,72 @@ void Player::update() {
         }
     }
 
-    // 常规移动输入
-    int inputDir = 0;
-    if (GetAsyncKeyState('A') || GetAsyncKeyState(VK_LEFT)) {
-        inputDir = -1;
-    }
-    else if (GetAsyncKeyState('D') || GetAsyncKeyState(VK_RIGHT)) {
-        inputDir = 1;
-    }
+    if (!isDashing) {
+        int inputDir = 0;
+        if (GetAsyncKeyState('A') || GetAsyncKeyState(VK_LEFT)) {inputDir = -1;}
+        else if (GetAsyncKeyState('D') || GetAsyncKeyState(VK_RIGHT)) {inputDir = 1;}
+        
+        float t = 0.0f;
+        if (MOVE_SPEED > 0) {
+            t = sqrt(fabs(vx) / MOVE_SPEED);
+        }
+        // 限制一下范围，防止浮点误差
+        if (t > 1.0f) t = 1.0f;
 
-    // 2. 反推当前的加速进度 t (0.0 ~ 1.0)
-    // 因为我们要用 t^2 的曲线，所以反推 t = sqrt(当前速度 / 最大速度)
-    // 这样我们就不需要在头文件里加变量了，直接利用 vx 本身的状态
-    float t = 0.0f;
-    if (MOVE_SPEED > 0) {
-        t = sqrt(fabs(vx) / MOVE_SPEED);
-    }
-    // 限制一下范围，防止浮点误差
-    if (t > 1.0f) t = 1.0f;
+        // 3. 定义每帧的变化量
+        // 4帧充满
+        float delta = 0.25f;
 
-    // 3. 定义每帧的变化量
-    // 4帧充满
-    float delta = 0.25f;
+        // 4. 计算新的进度 t
+        if (inputDir != 0) {
+            // --- 玩家正在按键 ---
 
-    // 4. 计算新的进度 t
-    if (inputDir != 0) {
-        // --- 玩家正在按键 ---
-
-        // 情况A: 正在急停/转向 (按键方向 与 角色朝向 不一致)
-        if (inputDir != facing && t > 0.01f) {
-            // 先执行减速逻辑
-            t -= delta;
-            if (t < 0.0f) {
-                t = 0.0f;
-                facing = inputDir; // 减速到0后，正式掉头
+            // 情况A: 正在急停/转向 (按键方向 与 角色朝向 不一致)
+            if (inputDir != facing && t > 0.01f) {
+                // 先执行减速逻辑
+                t -= delta;
+                if (t < 0.0f) {
+                    t = 0.0f;
+                    facing = inputDir; // 减速到0后，正式掉头
+                }
+            }
+            else {
+                // 情况B: 正常加速
+                facing = inputDir; // 确保朝向正确
+                t += delta;
+                if (t > 1.0f) t = 1.0f;
             }
         }
         else {
-            // 情况B: 正常加速
-            facing = inputDir; // 确保朝向正确
-            t += delta;
-            if (t > 1.0f) t = 1.0f;
+            // --- 玩家松开按键 ---
+            // 执行减速
+            t -= delta;
+            if (t < 0.0f) t = 0.0f;
         }
-    }
-    else {
-        // --- 玩家松开按键 ---
-        // 执行减速
-        t -= delta;
-        if (t < 0.0f) t = 0.0f;
-    }
 
-    // 5. 应用指数曲线 (Quadratic Curve / t^2)
-    // t=0.2 (1帧) -> 速度 4% (起步非常柔和)
-    // t=0.4 (2帧) -> 速度 16%
-    // t=0.6 (3帧) -> 速度 36%
-    // t=0.8 (4帧) -> 速度 64% (后半段发力)
-    // t=1.0 (5帧) -> 速度 100%
-    vx = facing * MOVE_SPEED * (t * t);
+        // 5. 应用指数曲线 (Quadratic Curve / t^2)
+        // t=0.2 (1帧) -> 速度 4% (起步非常柔和)
+        // t=0.4 (2帧) -> 速度 16%
+        // t=0.6 (3帧) -> 速度 36%
+        // t=0.8 (4帧) -> 速度 64% (后半段发力)
+        // t=1.0 (5帧) -> 速度 100%
+        vx = facing * MOVE_SPEED * (t * t);
+
+        // 跳跃
+        bool jumpKey = (GetAsyncKeyState('Z') & 0x8000) != 0;
+
+        // 只在按下瞬间触发跳跃
+        if (jumpKey && !lastJumpKey && jumpCount < MAX_JUMP) {
+            vy = JUMP_FORCE;
+            onGround = false;
+            jumpCount++;
+        }
+        lastJumpKey = jumpKey;
+    }
 
     if (GetAsyncKeyState('P') & 1) { // 使用 &1 确保只在按下瞬间触发一次切换
         debug_mode = !debug_mode;
     }
-
-    // 跳跃
-    bool jumpKey = (GetAsyncKeyState('Z') & 0x8000) != 0;
-
-    // 只在按下瞬间触发跳跃
-    if (jumpKey && !lastJumpKey && jumpCount < MAX_JUMP) {
-        vy = JUMP_FORCE;
-        onGround = false;
-        jumpCount++;
-    }
-    lastJumpKey = jumpKey;
 
     // 冲刺触发
     if (GetAsyncKeyState('C')) {
@@ -204,27 +200,71 @@ void Player::update() {
     }
 
     // 物理应用
-    vy += GRAVITY;
+    if (!isDashing) vy += GRAVITY;
     x += vx;
-    y += vy;
 
+    // X 轴碰撞检测
+    // 获取玩家当前的碰撞箱 (使用 float 精度)
+    Rect pRect = getHitbox();
+
+    for (const auto& wall : platforms) {
+        if (pRect.checkCollision(wall)) {
+            // 发生了碰撞，判断是撞到了左边还是右边
+            if (vx > 0) {
+                // 向右撞墙：把玩家拉回到墙的左边缘
+                x = wall.x - w;
+            }
+            else if (vx < 0) {
+                // 向左撞墙：把玩家拉回到墙的右边缘
+                x = wall.x + wall.w;
+            }
+            vx = 0; // 撞墙后水平速度归零
+            break; // 既然撞了一个，就不用检测其他的了（简化处理）
+        }
+    }
+
+    y += vy;
     // 平台碰撞
     onGround = false;
-    // 只有下落时检测平台
-    if (vy > 0 && x + w > PLATFORM_X && x < PLATFORM_X + PLATFORM_W) {
-        if (y + h >= PLATFORM_Y && y + h <= PLATFORM_Y + 20) {
-            y = PLATFORM_Y - h;
-            vy = 0;
-            onGround = true;
-            jumpCount = 0;
+    // Y 轴碰撞检测
+    pRect = getHitbox(); // 更新因为 y 变化后的碰撞箱位置
+
+    for (const auto& wall : platforms) {
+        if (pRect.checkCollision(wall)) {
+            // 发生了碰撞
+            if (vy > 0) {
+                // 向下掉落撞地板：修正到地板上方
+                y = wall.y - h;
+                onGround = true;
+                jumpCount = 0; // 刷新跳跃次数
+                // 落地时如果有落地动画或音效可以在这加
+            }
+            else if (vy < 0) {
+                // 向上跳起顶头：修正到天花板下方
+                y = wall.y + wall.h;
+                // 顶头后可以选择让速度归零，或者稍微反弹
+                // vy = 0; 
+                vy = 1.0f; // 给一点向下的反弹力，手感更好
+            }
+
+            // 修正速度，防止持续穿透
+            if (vy > 0) vy = 0; // 只有落地才清空速度，顶头已在上面处理
+            break;
+        }
+    }
+
+    if (isDashing) {
+        if (currentTime - lastGhostTime > 30) {
+            ghosts.push_back({ x, y, 255 });
+            lastGhostTime = currentTime;
         }
     }
 
     // 掉出屏幕重置 (虚空伤害)
     if (y > WINDOW_H) {
         hp--;
-        player.hurtTimer = player.HURT_DURATION;
-        player.isInvincible = true;
+        hurtTimer = HURT_DURATION;
+        isInvincible = true;
         x = WINDOW_W / 2;
         y = PLATFORM_Y - h - 100;
         vx = 0; vy = 0;
