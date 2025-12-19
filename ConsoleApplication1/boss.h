@@ -48,7 +48,7 @@ public:
     // 受击相关
 	bool boss_is_invincible = false;
 	DWORD boss_invincible_start_time = 0;
-	const int BOSS_INVINCIBLE_DURATION = 450; // BOSS受击无敌时间450ms
+	const int BOSS_INVINCIBLE_DURATION = 300; // BOSS受击无敌时间200ms
 
     Boss();
     void update();

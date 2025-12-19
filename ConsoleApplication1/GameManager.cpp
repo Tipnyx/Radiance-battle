@@ -9,6 +9,7 @@ extern std::vector<Projectile*> projectiles;
 
 #include <mmsystem.h>
 #pragma comment(lib,"winmm.lib")
+#include <cstdlib>
 
 /* 重置游戏:
 玩家重置
@@ -197,6 +198,11 @@ void GameLogic(DWORD& gameStartTime) {
     else {
         if (GetAsyncKeyState('R') & 0x8000){
             GameReset(gameStartTime);
+        }
+        if (GetAsyncKeyState(VK_ESCAPE) & 0x8000) {
+            // 优雅退出：先关闭绘图窗口，再结束程序
+            closegraph();
+            exit(0);
         }
         
     }

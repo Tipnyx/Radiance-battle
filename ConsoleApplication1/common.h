@@ -21,7 +21,7 @@ const COLORREF COLOR_BG = RGB(135, 206, 235); // 天空蓝
 
 // 物理常量
 const float GRAVITY = 0.6f;
-const float MOVE_SPEED = 5.0f;
+const float MOVE_SPEED = 6.0f;
 const float JUMP_FORCE = -12.0f;
 const float DASH_SPEED = 15.0f;
 

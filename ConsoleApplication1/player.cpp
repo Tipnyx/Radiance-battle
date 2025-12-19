@@ -73,17 +73,62 @@ void Player::update() {
     }
 
     // 常规移动输入
+    int inputDir = 0;
     if (GetAsyncKeyState('A') || GetAsyncKeyState(VK_LEFT)) {
-        vx = -MOVE_SPEED;
-        facing = -1;
+        inputDir = -1;
     }
     else if (GetAsyncKeyState('D') || GetAsyncKeyState(VK_RIGHT)) {
-        vx = MOVE_SPEED;
-        facing = 1;
+        inputDir = 1;
+    }
+
+    // 2. 反推当前的加速进度 t (0.0 ~ 1.0)
+    // 因为我们要用 t^2 的曲线，所以反推 t = sqrt(当前速度 / 最大速度)
+    // 这样我们就不需要在头文件里加变量了，直接利用 vx 本身的状态
+    float t = 0.0f;
+    if (MOVE_SPEED > 0) {
+        t = sqrt(fabs(vx) / MOVE_SPEED);
+    }
+    // 限制一下范围，防止浮点误差
+    if (t > 1.0f) t = 1.0f;
+
+    // 3. 定义每帧的变化量
+    // 4帧充满
+    float delta = 0.25f;
+
+    // 4. 计算新的进度 t
+    if (inputDir != 0) {
+        // --- 玩家正在按键 ---
+
+        // 情况A: 正在急停/转向 (按键方向 与 角色朝向 不一致)
+        if (inputDir != facing && t > 0.01f) {
+            // 先执行减速逻辑
+            t -= delta;
+            if (t < 0.0f) {
+                t = 0.0f;
+                facing = inputDir; // 减速到0后，正式掉头
+            }
+        }
+        else {
+            // 情况B: 正常加速
+            facing = inputDir; // 确保朝向正确
+            t += delta;
+            if (t > 1.0f) t = 1.0f;
+        }
     }
     else {
-        vx = 0;
+        // --- 玩家松开按键 ---
+        // 执行减速
+        t -= delta;
+        if (t < 0.0f) t = 0.0f;
     }
+
+    // 5. 应用指数曲线 (Quadratic Curve / t^2)
+    // t=0.2 (1帧) -> 速度 4% (起步非常柔和)
+    // t=0.4 (2帧) -> 速度 16%
+    // t=0.6 (3帧) -> 速度 36%
+    // t=0.8 (4帧) -> 速度 64% (后半段发力)
+    // t=1.0 (5帧) -> 速度 100%
+    vx = facing * MOVE_SPEED * (t * t);
 
     if (GetAsyncKeyState('P') & 1) { // 使用 &1 确保只在按下瞬间触发一次切换
         debug_mode = !debug_mode;
