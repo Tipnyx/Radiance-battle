@@ -137,6 +137,19 @@ void Boss::draw() {
 
 }
 
+Rect Boss::getRect() {
+   
+    return { x - 90,y - 90, 180,180 };
+}
+
+void Boss::drawDebug() {
+    if (!debug_mode) return;
+    setlinecolor(RED);
+    //setfillstyle(BS_NULL); // 无填充
+    Rect r = getRect();
+    rectangle((int)r.x, (int)r.y, (int)(r.x + r.w), (int)(r.y + r.h));
+}
+
 void Boss::SpawnSwordWallHorizontal(bool fromLeft) {
     printf("横剑\n");
 	// 先定义一下画横剑的参数,startX,vx, angle,这都是好直接确定的
@@ -238,22 +251,34 @@ void Boss::SpawnSwordBurst() {
 }
 
 // 三连激光
+
 void Boss::SpawnLaserBurst() {
-    printf("三连激光 - 第 %d 波\n", laserWaveCount + 1);
+    printf("辐射激光 - 第 %d 波\n", laserWaveCount + 1);
 
-    // 计算指向玩家的基础角度
-    float dx = (player.x + player.w / 2) - x;
+    int count = 8; // 一圈 8 条激光，构成全方位封锁
+    float step = (2 * 3.14159f) / count; // 每条激光间隔 45 度 (360 / 8)
+
+    // --- 核心逻辑：波次交错 ---
+    // 每一波的基础角度都偏移 step 的 1/3
+    // 这样三波打完，刚好覆盖了之前的空隙，逼迫玩家必须走位
+    float waveOffset = (laserWaveCount % 3) * (step / 3.0f);
+
+    // 加上一点随机扰动 (-5度 到 +5度)，让每次 Boss 战都不一样
+    float randomJitter = ((rand() % 100) / 100.0f * 0.17f) - 0.08f;
+
+    // 基础旋转：为了避免激光总是死板地呈"十字"或"X型"，给一个初始旋转
+    float baseRotation = 0.0f;
+
+     //如果想稍微"针对"一下玩家，可以让基础角度大致指向玩家，但依然是全屏散射
+    /*float dx = (player.x + player.w / 2) - x;
     float dy = (player.y + player.h / 2) - y;
-    float baseAngle = atan2(dy, dx);
+    baseRotation = atan2(dy, dx); */
 
-    // 扇形发射 3 条：中心、左偏 25度、右偏 25度
-    float offsets[] = { 0.0f, -0.43f, 0.43f }; // 0.43弧度 ≈ 25度
+    for (int i = 0; i < count; i++) {
+        // 最终角度 = 基础旋转 + 波次偏移 + 随机扰动 + 循环增量
+        float angle = baseRotation + waveOffset + randomJitter + (i * step);
 
-    // 为了增加难度，每一波加一点随机偏移
-    float randomOffset = ((rand() % 20) - 10) * 0.01f;
-
-    for (int i = 0; i < 3; i++) {
-        projectiles.push_back(new Laser(x, y, baseAngle + offsets[i] + randomOffset));
+        projectiles.push_back(new Laser(x, y, angle));
     }
 }
 

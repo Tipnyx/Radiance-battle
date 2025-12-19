@@ -92,9 +92,10 @@ void DrawUI() {
 }
 
 void DrawPlatform() {
-    // --- 替换原有的画平台逻辑 (圆角黑曜石风格) ---
-    // 圆角半径 (控制圆滑程度，值越大越圆)
-    int r = 15;
+    // --- 画平台逻辑 (圆角黑曜石风格) ---
+    
+    int r = 15; // 圆角半径 (控制圆滑程度，值越大越圆)
+
     // 1. 绘制高光底板 (Highlight Layer)
         // 这一层画在下面，颜色稍亮。因为上面的层会向下偏移，所以这层的顶部会露出来形成高光倒角。
     setfillcolor(RGB(60, 70, 90)); // 亮蓝灰色
@@ -134,7 +135,7 @@ void DrawPlatform() {
         line(sx, sy, sx + len, sy + (rand() % 3 - 1));
     }
 
-    // 5. 边缘描边 (可选，增加精致感)
+    // 5. 边缘描边
     setlinecolor(RGB(40, 50, 70)); // 很淡的描边
     setlinestyle(PS_SOLID, 1);
     //setfillcolor(NULL); // 不填充，只画框

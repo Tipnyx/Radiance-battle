@@ -55,6 +55,10 @@ public:
     void SpawnBeam();
     void SpawnSwordBurst();
     void SpawnLaserBurst(); 
+
+    virtual Rect getRect();
+	void drawDebug();
+
     void BossAI();
 };
 

@@ -162,3 +162,23 @@ void GameLogic(DWORD gameStartTime) {
         GameReset(gameStartTime);
     }
 }
+
+void DrawEntities() {
+    if (debug_mode) {
+        setlinecolor(GREEN); // 玩家本体用绿色框
+        Rect pRect = player.getHitbox();
+        rectangle((int)pRect.x, (int)pRect.y, (int)(pRect.x + pRect.w), (int)(pRect.y + pRect.h));
+
+        if (player.isAttacking) {
+            setlinecolor(YELLOW); // 玩家攻击范围用黄色框
+            rectangle((int)player.attackBox.x, (int)player.attackBox.y,
+                (int)(player.attackBox.x + player.attackBox.w),
+                (int)(player.attackBox.y + player.attackBox.h));
+        }
+    }
+    // 如果开启了调试模式则绘制红框
+    for (auto p : projectiles) { p->draw(); if (debug_mode) p->drawDebug(); } // 画弹幕
+    if (debug_mode) { boss.drawDebug(); }
+    boss.draw(); //画Boss
+    if (player.hp > 0) player.draw(); // 画玩家
+};

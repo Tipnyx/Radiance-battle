@@ -52,23 +52,7 @@ int main() {
         // 2. 绘图
         cleardevice();
 
-        if (debug_mode) {
-            setlinecolor(GREEN); // 玩家本体用绿色框
-            Rect pRect = player.getHitbox();
-            rectangle((int)pRect.x, (int)pRect.y, (int)(pRect.x + pRect.w), (int)(pRect.y + pRect.h));
-
-            if (player.isAttacking) {
-                setlinecolor(YELLOW); // 玩家攻击范围用黄色框
-                rectangle((int)player.attackBox.x, (int)player.attackBox.y,
-                    (int)(player.attackBox.x + player.attackBox.w),
-                    (int)(player.attackBox.y + player.attackBox.h));
-            }
-        }
-        // 如果开启了调试模式则绘制红框
-        for (auto p : projectiles) {p->draw();if (debug_mode) p->drawDebug();} // 画弹幕
-        boss.draw(); //画Boss
-        if (player.hp > 0) player.draw(); // 画玩家
-
+        DrawEntities(); // 画实体
         DrawPlatform(); //画平台
         SpikeManager(gameStartTime);  //地刺管理，15秒后开始生成，左右半区来回切换
         DrawUI(); // 画血条

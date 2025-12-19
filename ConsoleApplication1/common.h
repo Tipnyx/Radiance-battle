@@ -3,11 +3,11 @@
 #include <vector>
 
 // --- 常量定义 ---
-const int WINDOW_W = 1024;
-const int WINDOW_H = 768;
+const int WINDOW_W = 1262;
+const int WINDOW_H = 780;
 const int PLATFORM_Y = 718;
-const int PLATFORM_W = 900;
-const int PLATFORM_H = 50;
+const int PLATFORM_W = 1135;
+const int PLATFORM_H = 62;
 const int PLATFORM_X = (WINDOW_W - PLATFORM_W) / 2;
 
 // 颜色
@@ -40,7 +40,7 @@ enum SpikeState { SPIKE_HIDDEN, SPIKE_WARNING, SPIKE_ACTIVE };
 extern SpikeState currentSpikeState;
 extern bool spikeOnLeft;            // 当前在哪一侧
 extern DWORD spikeTimer;               // 用于计算状态持续时间的状态计时器
-const int TIME_TO_START_SPIKES = 15000; // 15秒后开始
+const int TIME_TO_START_SPIKES = 30000; // 30秒后开始
 const int DURATION_WARNING = 2000;      // 预警持续 2秒
 const int DURATION_ACTIVE = 8000;       // 攻击持续 8秒 (总共10秒一轮)
 

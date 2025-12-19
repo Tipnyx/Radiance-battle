@@ -2,9 +2,11 @@
 #include"common.h"
 #include"projectile.h"
 
+// --- Projectile 基类 ---
 
-Rect Projectile::getRect() { return { x, y, w, h }; }
+Rect Projectile::getRect() { return { x, y, w, h }; } // 通用的获取碰撞箱方法，用原点+长宽的矩形表示
 
+// Debug模式下，画出实体的碰撞箱，用红色线框表示
 void Projectile::drawDebug() {
         if (!debug_mode) return;
         setlinecolor(RED);
@@ -12,6 +14,9 @@ void Projectile::drawDebug() {
         Rect r = getRect();
         rectangle((int)r.x, (int)r.y, (int)(r.x + r.w), (int)(r.y + r.h));
  }
+
+
+// --- Orb类的方法实现 ---
 
 Orb::Orb(float sx, float sy, float px, float py) {
     x = sx; 
@@ -280,6 +285,9 @@ Rect Sword::getRect(){
     return { x - (vx < 0 ? newW : 0), y - (vy < 0 ? newH : 0), newW, newH };
 }
 
+
+// --- Beam类的方法实现 ---
+
 Beam::Beam(float startX, float _speed) {
     x = startX;
     y = 0;
@@ -313,15 +321,15 @@ void Beam::draw() {
 }
 
 
-// --- projectile.cpp ---
-
-// ... 在文件末尾添加 Laser 的实现 ...
+// --- Laser类的方法实现 ---
 
 Laser::Laser(float _cx, float _cy, float _angle) {
     cx = _cx; cy = _cy;
     angle = _angle;
     x = cx; y = cy; // 兼容基类坐标
-    type = 3;       // 设定为 3号类型 (Laser)
+    
+    type = 3;       // 设定为3号类型 (Laser)
+    
     active = true;
     stateStartTime = GetTickCount();
     currentWidth = 2.0f; // 初始预警线宽度
@@ -329,7 +337,8 @@ Laser::Laser(float _cx, float _cy, float _angle) {
 
 void Laser::update(Player& p) {
     DWORD now = GetTickCount();
-    float timeInState = (now - stateStartTime) / 1000.0f;
+
+	float timeInState = (now - stateStartTime) / 1000.0f; //获取当前状态持续时间，单位秒
 
     // --- 状态机 ---
     if (state == LASER_PREPARE) {
