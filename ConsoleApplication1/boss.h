@@ -9,7 +9,7 @@ struct TrailPoint {
 class Boss {
 public:
     float x, y;
-    int hp = 10;
+    int hp = 400;
     bool active = true;
     float alpha = 0; // 用于进场时的渐显效果
 
@@ -63,6 +63,8 @@ public:
     int phaseTwoTargetIndex = -1;  // 当前瞬移的目标是第几个锚点
     int phaseTwoAttackCount = 0;   // 在当前位置还需要攻击几次
     DWORD teleportStartTime = 0;   // 记录瞬移开始的时间
+
+    bool isDefeated = false; //boss是否被击败
 
     IMAGE hitCache;
 	void InitHitCache();

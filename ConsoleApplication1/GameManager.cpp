@@ -40,6 +40,15 @@ void GameReset(DWORD& gameStartTime) {
     // 重置地刺
     currentSpikeState = SPIKE_HIDDEN;
     spikeTimer = 0;
+
+    currentLevelBottom = WINDOW_H;
+    boss.isPhaseTwoActive = false; // 二阶段是否激活
+    boss.active = true;
+    boss.PhaseTwo = false;
+    platforms.clear();
+    platforms.push_back({ (float)PLATFORM_X, (float)PLATFORM_Y, (float)PLATFORM_W, 500 });
+
+    boss.isDefeated = false;
 }
 
 /* 此函数实现玩家攻击BOSS的判定,及攻击到后的行为*/
@@ -235,7 +244,7 @@ void DrawEntities() {
 
 void UpdateCamera(Player& p) {
 
-    if (p.y < 200 && currentLevelBottom > 400) {
+    if (p.y < 200 && currentLevelBottom > 400 && boss.PhaseTwo) {
         currentLevelBottom = 400; // 抬高底线 (注意 Y 越小越高，所以是赋值更小的值)
     }
 

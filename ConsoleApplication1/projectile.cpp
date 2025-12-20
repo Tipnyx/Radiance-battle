@@ -1,6 +1,7 @@
 #include"player.h"
 #include"common.h"
 #include"projectile.h"
+#include"world.h"
 
 // --- Projectile 基类 ---
 
@@ -100,8 +101,14 @@ void Orb::update(Player& p) {
     y += vy;
 
     // 边界处理
-    if (now - spawnTime > 8000 || y > PLATFORM_Y) active = false;
-    if (x < -100 || x > WINDOW_W + 100 || y < -100) active = false;
+    if (now - spawnTime > 8000) active = false;
+    if (x < -100 || x > WINDOW_W + 100 || y < -2000) active = false;
+	for (auto& plat : platforms) {
+		if (getRect().checkCollision(plat)) {
+			active = false;
+			break;
+		}
+	}
 }
 
 void Orb::draw() {
@@ -227,7 +234,7 @@ void Sword::update(Player& p) {
         y += vy;
     }
 
-    if (x < -400 || x > WINDOW_W + 400 || y < -200 || y > WINDOW_H + 200) active = false;
+    if (x < -400 || x > WINDOW_W + 400 || y < -2000 || y > WINDOW_H + 200) active = false;
 }
 
 void Sword::draw(){

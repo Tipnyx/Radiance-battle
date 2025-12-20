@@ -53,16 +53,12 @@ int main() {
     InitPlatform();
     
     while (true) {
-		// 1. 主逻辑更新
 		GameLogic(gameStartTime);
-        // 2. 绘图
         cleardevice();
-
-        
         putimage((int)(-cameraX * 0.3f - 100), 0, &img_bg);
         DrawEntities(); // 画实体
         DrawPlatform(); //画平台
-        SpikeManager(gameStartTime);  //地刺管理，15秒后开始生成，左右半区来回切换
+        SpikeManager(gameStartTime);
         DrawUI(); // 画血条
         FlushBatchDraw(); // 批量绘图
         Sleep(16); // 约60帧

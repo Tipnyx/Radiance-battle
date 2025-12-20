@@ -14,11 +14,7 @@ void make_one_stair(int X,int Y,int W,int H) {
 }
 
 void GenerateStairs() {
-    // 1. 清空原来的攻击物 (可选，防止残留的剑伤到玩家)
-    // projectiles.clear(); 
 
-    // 2. 生成阶梯
-    // 从地面上方一点开始
     float startX = WINDOW_W / 2 ;     // 屏幕水平中心
     float currentY = PLATFORM_Y - 250; // 第一级台阶的高度
 

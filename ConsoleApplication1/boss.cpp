@@ -22,12 +22,12 @@ struct BossAnchor {
 // 预设的瞬移点列表 (根据你的 GenerateStairs 数据推算的)
 std::vector<BossAnchor> phaseTwoAnchors = {
 
-    {500, 200 - 150},
-    {120, 50 - 150},
-    {800, 0 - 150},
-    {480, -300 - 150},
-    {0, -200 - 150},
-    {980, -280 - 150}
+    {500 + 100, 200 - 350},
+    {120 + 100, 50 - 350},
+    {800 + 100, 0 - 350},
+    {480 + 100, -300 - 350},
+    {0 + 100, -200 - 350},
+    {980 + 100, -280 - 350}
 };
 
 Boss::Boss() {
@@ -116,10 +116,13 @@ void Boss::update() {
         x = WINDOW_W / 2;        // 4. 初始位置：屏幕中间
         y = -600;                // 5. 初始高度：在玩家头顶出现
         alpha = 0.0f;            // 6. 重新开始淡入动画
+        PhaseTwo = false;
 
         // 这里可以重置一下瞬移状态，防止刚出来就乱飞
         isTeleporting = false;
         phaseTwoTargetIndex = -1;
+
+        trails.clear();
     }
 
     // --- 死亡转场逻辑 ---
@@ -142,11 +145,17 @@ void Boss::update() {
         // 4. 触发阶梯生成 (我们需要在 world.h 里声明这个函数)
         GenerateStairs();
 
+        // 1. 清空原来的攻击物 (可选，防止残留的剑伤到玩家)
+        projectiles.clear();
+
         // 5. 可以在这里播放一个震屏或者音效，增加仪式感
         // PlaySound(...);
         return;
     }
     
+    if (hp <= 0 && isPhaseTwoActive) {
+        isDefeated = true;
+    }
 }
 
 void Boss::InitSunCache() {
@@ -250,7 +259,8 @@ void Boss::draw() {
     // SRCPAINT参数会将太阳图片和原有的主体进行了位运算
 	// 会去掉黑色背景，同时把太阳的亮色部分叠加上去
 	// 造成某种视觉上的发光效果，透明感，能量体的感觉
-    putimage(x-150 - cameraX, y-150 - cameraY, &sunCache,SRCPAINT);
+
+    putimage(x - 150 - cameraX, y - 150 - cameraY, &sunCache, SRCPAINT);
 
     if (boss.boss_is_invincible){
 		putimage(x - 150 - cameraX, y - 150 - cameraY, &hitCache, SRCPAINT);
@@ -309,13 +319,10 @@ void Boss::SpawnSwordWallHorizontal(bool fromLeft) {
 
     int randomOffset = (rand() % 50) - 30; // 在 Y 轴方向整体上下浮动 -25 到 +25 像素
 
-    float baseY = isPhaseTwoActive ? this->y : PLATFORM_Y;
-    if (isPhaseTwoActive) baseY += 100;
-
     for (int i = 0; i < totalSwords; i++) {
         if ((i == gapA || i == gapB || i == gapC || i == gapD)) continue;
         // 分布在Y轴上，覆盖玩家可能跳跃的高度
-        float py = baseY - (totalSwords * spacing / 2.0f) + (i * spacing) + randomOffset;
+        float py = currentLevelBottom - (i * spacing) + randomOffset;
         projectiles.push_back(new Sword(startX, py, vx, 0, angle, false));
     }
 }
@@ -352,7 +359,7 @@ void Boss::SpawnOrbs() {
         float angle = (rand() % 360) * 3.14159f / 180.0f;
         float dist = 300.0f;
         ox = (WINDOW_W / 2) + cos(angle) * dist;
-        oy = (PLATFORM_Y - 300) - sin(angle) * 100;
+        oy = (currentLevelBottom - 450) - sin(angle) * 100;
         float dx = ox - (player.x + player.w / 2);
         float dy = oy - (player.y + player.h / 2);
         if (sqrt(dx * dx + dy * dy) >= minDist) break;
@@ -429,6 +436,8 @@ void Boss::SpawnLaserBurst() {
 
 // Boss AI逻辑
 void Boss::BossAI() {
+
+	if (isDefeated) return; // 如果Boss已经被击败，跳过AI逻辑
 
 	// 入场未完成，暂停攻击逻辑
     if (alpha < 1.0f) {
@@ -673,7 +682,7 @@ void Boss::PhaseTwoAI() {
         if (now - waitTimer < 1000) return; // 等待中...
 
         // 随机选招式 (去掉了不适合高空的纵向剑雨)
-        int attackType = rand() % 3;
+        int attackType = rand() % 4;
 
         if (attackType == 0) { // 光球
             orbAttackActive = true;
@@ -691,6 +700,11 @@ void Boss::PhaseTwoAI() {
             burstAttackActive = true;
             burstWaveCount = 0;
             lastBurstTime = now;
+        }
+        else if (attackType == 3) {
+			laserAttackActive = true;
+			laserWaveCount = 0;
+			lastLaserTime = now - 1000; // 这里的减法是为了让第一波立即发射
         }
 
         phaseTwoAttackCount--; // 消耗一次攻击次数
