@@ -52,7 +52,7 @@ void Boss::update() {
         if (isPhaseTwoActive) {
             y += (targetY - y) * 0.10f;
         }
-        else if (isPhaseClimbing) {
+        else if (isPhaseClimbing || isPhaseThree) {
 			y += (targetY - y) * 0.01f; // 攀爬阶段 Y 轴移动更慢
         }
         else {
@@ -72,13 +72,13 @@ void Boss::update() {
         float dist = sqrt(pow(x - targetX, 2) + pow(y - targetY, 2));
         if (dist < 2.0f) { // 稍微放宽一点判断
             x = targetX;
-            if (isPhaseTwoActive || isPhaseClimbing) y = targetY; // 修正 Y
+            if (isPhaseTwoActive || isPhaseClimbing || isPhaseThree) y = targetY; // 修正 Y
             isTeleporting = false;
         }
     }
     else {
         // 非位移状态下的悬浮
-        if (isPhaseTwoActive || isPhaseClimbing) {
+        if (isPhaseTwoActive || isPhaseClimbing || isPhaseThree) {
             // 二阶段：在当前位置悬浮
             y = targetY + hoverOffset;
         }
@@ -290,7 +290,7 @@ void Boss::SpawnSwordWallVertical() {
 }
 
 void Boss::SpawnOrbs() {
-    //printf("光球\n");
+    printf("光球\n");
     const float minDistToPlayer = 200.0f; //最小距离
     const float minRectBuffer = 80.0f; //离平台的最小距离，防止刷出来直接消失
 
@@ -418,6 +418,23 @@ void Boss::UpdateAttacks(){
 
 	DWORD currentTime = GetTickCount();
 
+	// 处理攀爬激光逻辑
+    if (climbingLaserActive) {
+        // 节奏：每 1.5 秒射一发，给玩家留出跳跃躲避的时间
+        if (currentTime - lastClimbingLaserTime > 1250) {
+            // 计算从 Boss 到玩家的角度
+            float dx = (player.x + player.w / 2) - x;
+            float dy = (player.y + player.h / 2) - y;
+            float angle = atan2(dy, dx);
+
+            // 产生单道指向玩家位置的激光
+            projectiles.push_back(new Laser(x, y, angle));
+
+            lastClimbingLaserTime = currentTime;
+        }
+        // 注意：这里不需要 return，因为它是持续背景干扰，不占用其他动作位
+    }
+
     // 处理环形剑连发逻辑
     if (burstAttackActive) {
         // 计算当前大招已经进行了多久
@@ -443,6 +460,10 @@ void Boss::UpdateAttacks(){
 
     //光球攻击正在进行
     if (orbAttackActive) {
+        if (isPhaseThree) {
+            SpawnOrbs();
+            return;
+        }
         if (orbAttackCount < ORB_ATTACK_TOTAL && currentTime - orbAttackLastTime > ORB_ATTACK_INTERVAL) {
             orbAttackLastTime = currentTime;
             orbAttackCount++;

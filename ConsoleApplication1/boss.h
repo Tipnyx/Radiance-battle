@@ -31,6 +31,7 @@ public:
 	bool isPhaseTransition = false; // 是否正在进行阶段转换
     bool isPhaseTwoActive = false; // 二阶段是否激活
 	bool isPhaseClimbing = false; // 是否进入攀爬阶段
+    bool isPhaseThree = false; // 三阶段
 
     DWORD lastAttackTime = 0;
     DWORD lastOrbTime = 0;
@@ -81,6 +82,9 @@ public:
     DWORD teleportStartTime = 0;   // 记录瞬移开始的时间
 
     bool isDefeated = false; //boss是否被击败
+
+    bool climbingLaserActive = false; // 是否开启攀爬阶段的追踪激光
+    DWORD lastClimbingLaserTime = 0;  // 上次发射时间
 
     std::vector<BossAnchor> phaseTwoAnchors = {
     {500 + 100, 200 - 350},

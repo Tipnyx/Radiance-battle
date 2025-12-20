@@ -52,3 +52,13 @@ public:
     void Enter(Boss& boss) override;
     void Execute(Boss& boss) override;
 };
+
+// --- Èý½×¶Î --- 
+class PhaseThreeState : public BossState {
+private:
+    DWORD lastAttackTime = 0;
+    int attackCounter = 0;
+public:
+	void Enter(Boss& boss) override;
+	void Execute(Boss& boss) override;
+};

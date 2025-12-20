@@ -239,12 +239,18 @@ void PhaseTwoState::Execute(Boss& boss) {
 }
 
 void ClimbingState::Enter(Boss& boss) {
-    boss.hp = 500;
+    
     boss.isPhaseTwoActive = false;
-    boss.targetX = WINDOW_W / 2;
-    boss.targetY = -4900;
+
     boss.isTeleporting = true;
     boss.isPhaseClimbing = true;
+    boss.climbingLaserActive = true;
+
+    boss.hp = 500;
+    boss.targetX = WINDOW_W / 2;
+    boss.targetY = -4900;
+
+    boss.lastClimbingLaserTime = GetTickCount();
 
 	GenerateUPStairs(); // 生成向上的台阶
 
@@ -254,6 +260,61 @@ void ClimbingState::Enter(Boss& boss) {
 }
 
 void ClimbingState::Execute(Boss& boss) {
+    if (player.y < -4400) {
+        boss.climbingLaserActive = false;
+        boss.ChangeState(new PhaseThreeState());
+    }
+}
+
+void PhaseThreeState::Enter(Boss& boss) {
+	
+	boss.isPhaseClimbing = false;
+
+    boss.isPhaseThree = true;
+    boss.isTeleporting = true;
+
+    boss.hp = 300;
+	boss.targetX = WINDOW_W / 2;
+	boss.targetY = -4900;
+
+    attackCounter = 0; // 重置私有计数器
+
+	boss.trails.clear();
+	projectiles.clear();
+}
+
+void PhaseThreeState::Execute(Boss& boss) {
+	
+    DWORD currentTime = GetTickCount();
+
+    // 胜利判定
+    if (boss.hp <= 0) {
+        boss.isDefeated = true;
+        boss.active = false;
+        boss.orbAttackActive = false;
+        projectiles.clear();
+        return;
+        // 可以在这里触发全局胜利逻辑
+    }
+
+    if (currentTime - lastAttackTime > 2000) {
+        lastAttackTime = currentTime;
+        boss.orbAttackActive = true;
+        //boss.orbAttackLastTime = currentTime;
+        attackCounter++; // 增加发招计数
+    }
+    else { boss.orbAttackActive = false; }
+    
+    if (boss.isTeleporting) return;
+
+    if (attackCounter >= 2) {
+        // 四分位点随机：1/4, 2/4, 3/4 屏幕宽度
+        boss.targetX = WINDOW_W * (rand() % 3 + 1) / 4.0f;
+        boss.isTeleporting = true;
+
+        attackCounter = 0; // 重置计数器，开始下一轮循环
+        return;
+    }
     
 }
 

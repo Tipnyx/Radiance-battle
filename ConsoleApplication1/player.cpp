@@ -275,7 +275,11 @@ void Player::update() {
         hurtTimer = HURT_DURATION;
         isInvincible = true;
 
-        if (currentLevelBottom <= 400) {
+        if (currentLevelBottom <= -4400) {
+            x = 450;
+            y = -4650;
+        }
+        else if (currentLevelBottom <= 400) {
             x = 550; // 或者新平台的 x
             y = 100; // 重生在 y=200 的平台上方
         }

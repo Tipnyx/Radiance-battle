@@ -251,8 +251,8 @@ void UpdateCamera(Player& p) {
 
 	// 玩家往上走且处于二阶段转换时，抬高底线
     if (p.y < 200 && currentLevelBottom > 400 && boss.isPhaseTransition) {currentLevelBottom = 400;}
-    if (!boss.isPhaseClimbing || (boss.isPhaseClimbing && p.y >= -4500)) { targetX = p.x - (WINDOW_W / 2.0f); }
-	if (p.y < -4400 && currentLevelBottom >= -4400 && boss.isPhaseClimbing) {
+    if (!(boss.isPhaseClimbing || boss.isPhaseThree) || ((boss.isPhaseClimbing || boss.isPhaseThree) && p.y >= -4500)) { targetX = p.x - (WINDOW_W / 2.0f); }
+	if (p.y < -4550 && currentLevelBottom >= -4400 && (boss.isPhaseClimbing || boss.isPhaseThree)) {
 		currentLevelBottom = -4400;
         targetX = 0;
 	}
@@ -266,7 +266,7 @@ void UpdateCamera(Player& p) {
     if (cameraX > 200) cameraX = 200;
 
     // boss存活且不是二阶段，爬梯阶段时会保持镜头Y轴在默认位置
-    if (boss.active && !boss.isPhaseTwoActive && !boss.isPhaseClimbing) {
+    if (boss.active && !boss.isPhaseTwoActive && !(boss.isPhaseClimbing || boss.isPhaseThree)) {
         float targetY = 0;
         cameraY += (targetY - cameraY) * 0.1f; //镜头跟随
     }
@@ -274,7 +274,7 @@ void UpdateCamera(Player& p) {
         float targetY;
         // Boss 消失了 (进入攀爬阶段) -> 开启 Y 轴自由跟随
         // 目标是让玩家保持在屏幕垂直中心偏下一点的位置
-        if (p.y < -4400 && boss.isPhaseClimbing ) {
+        if (p.y < -4400 && (boss.isPhaseClimbing || boss.isPhaseThree) ) {
             // 锁定镜头高度，不再随玩家跳跃起伏
             // 这个值需要根据你最终平台的实际高度微调，目标是让平台处于屏幕中下部
             targetY = -4550 - (WINDOW_H * 0.75f);

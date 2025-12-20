@@ -144,7 +144,7 @@ void Orb::update(Player& p) {
 
     // ±ß½ç´¦Àí
     if (now - spawnTime > 8000) active = false;
-    if (x < -100 || x > WINDOW_W + 100 || y < -2000) active = false;
+    if (x < -100 || x > WINDOW_W + 100 || y < -5450) active = false;
 	for (auto& plat : platforms) {
 		if (getRect().checkCollision(plat)) {
 			active = false;

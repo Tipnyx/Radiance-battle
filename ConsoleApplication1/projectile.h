@@ -97,7 +97,7 @@ struct Laser : Projectile {
 	float cx, cy;       // 激光源头（Boss中心）
 	float angle;        // 发射角度
 	float currentWidth; // 当前宽度（用于动画）
-	float length = 1500.0f; // 激光长度，足够穿透屏幕
+	float length = 6000.0f; // 激光长度，足够穿透屏幕
 
 	DWORD stateStartTime; // 状态开始时间
 
