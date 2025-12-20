@@ -237,7 +237,7 @@ void LastSpike() {
 void SpikeManager(DWORD gameStartTime) {
     DWORD now = GetTickCount();
 
-    if (boss.isFinalPhase) {
+    if (boss.PhaseOneLast) {
         LastSpike();
         return;
     }
@@ -245,7 +245,7 @@ void SpikeManager(DWORD gameStartTime) {
     // 1. 状态机更新逻辑
     if (currentSpikeState == SPIKE_HIDDEN) {
 		// boss 血量低于 650 -> 进入预警状态
-        if (boss.hp < 650 && !boss.PhaseTwo) {
+        if (boss.hp < 650 && !boss.PhaseClimb) {
             currentSpikeState = SPIKE_WARNING;
             spikeTimer = now;
             spikeOnLeft = true; // 第一次总是出现在左边

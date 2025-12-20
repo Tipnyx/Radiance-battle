@@ -63,3 +63,4 @@ struct Rect {
 };
 
 extern std::vector<Rect> platforms; // 全局平台列表
+

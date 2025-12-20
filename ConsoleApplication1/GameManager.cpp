@@ -2,6 +2,7 @@
 #include"player.h"
 #include"boss.h"
 #include"projectile.h"
+#include"BossState.h"
 
 extern Player player;
 extern Boss boss;
@@ -26,7 +27,7 @@ void GameReset(DWORD& gameStartTime) {
     for (auto p : projectiles) delete p;
     projectiles.clear();
     gameStartTime = GetTickCount();
-    boss.isFinalPhase = false;
+    boss.PhaseOneLast = false;
 
     // 2. 重置音乐
     // 停止当前播放
@@ -44,11 +45,12 @@ void GameReset(DWORD& gameStartTime) {
     currentLevelBottom = WINDOW_H;
     boss.isPhaseTwoActive = false; // 二阶段是否激活
     boss.active = true;
-    boss.PhaseTwo = false;
+    boss.PhaseClimb = false;
     platforms.clear();
     platforms.push_back({ (float)PLATFORM_X, (float)PLATFORM_Y, (float)PLATFORM_W, 500 });
 
     boss.isDefeated = false;
+	boss.ChangeState(new PhaseOneState());
 }
 
 /* 此函数实现玩家攻击BOSS的判定,及攻击到后的行为*/
@@ -202,8 +204,7 @@ void GameLogic(DWORD& gameStartTime) {
     if (player.hp > 0) {
         // 1. 更新逻辑
 		player.update(); // 玩家动画和状态更新
-        boss.update(); // BOSS 动画
-		boss.BossAI(); // BOSS 出招判定
+        boss.update(); // BOSS动画和状态更新
 
         AttackBoss(); // 玩家攻击 BOSS 的判定
         ProjectileManager(); //管理弹幕
@@ -244,7 +245,7 @@ void DrawEntities() {
 
 void UpdateCamera(Player& p) {
 
-    if (p.y < 200 && currentLevelBottom > 400 && boss.PhaseTwo) {
+    if (p.y < 200 && currentLevelBottom > 400 && boss.PhaseClimb) {
         currentLevelBottom = 400; // 抬高底线 (注意 Y 越小越高，所以是赋值更小的值)
     }
 

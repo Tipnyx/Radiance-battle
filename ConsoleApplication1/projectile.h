@@ -112,3 +112,4 @@ struct Laser : Projectile {
 	std::vector<POINT> getHitPoints(); 
 
 };
+

@@ -6,15 +6,26 @@ struct TrailPoint {
     float alpha;
 };
 
+// 二阶段 Boss 可以瞬移的锚点 (X, Y)
+struct BossAnchor {
+    float x, y;
+};
+
+
+
+class BossState;
+
 class Boss {
+	BossState* currentState = nullptr; // 当前状态指针
+
 public:
     float x, y;
     int hp = 400;
     bool active = true;
     float alpha = 0; // 用于进场时的渐显效果
 
-    bool isFinalPhase = false; // 是否进入三阶段
-    bool PhaseTwo = false;
+    bool PhaseOneLast = false; // 是否进入三阶段
+    bool PhaseClimb = false;
 
     DWORD lastAttackTime = 0;
     DWORD lastOrbTime = 0;
@@ -66,11 +77,22 @@ public:
 
     bool isDefeated = false; //boss是否被击败
 
+    std::vector<BossAnchor> phaseTwoAnchors = {
+    {500 + 100, 200 - 350},
+    {120 + 100, 50 - 350},
+    {800 + 100, 0 - 350},
+    {480 + 100, -300 - 350},
+    {0 + 100, -200 - 350},
+    {980 + 100, -280 - 350}
+    };
+
     IMAGE hitCache;
 	void InitHitCache();
 
     Boss();
-    void update();
+	void update(); // 这里面要写if(currentState) currentState->update(*this)
+    // 这里的update是BossState的update，传入Boss的引用，调用对应的状态
+    
     void draw();
 
     void SpawnSwordWallHorizontal(bool fromLeft);
@@ -84,7 +106,13 @@ public:
 	void drawDebug();
     void reset();
 
-    void BossAI();
-    void PhaseTwoAI(); // 记得声明这个新函数
+    void ChangeState(BossState* newState); // 切换状态
+    void UpdateStateMachine();             // 更新状态机
+    void UpdateAttacks();
 };
+
+
+
+
+
 

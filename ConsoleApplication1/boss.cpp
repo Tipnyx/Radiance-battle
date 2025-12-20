@@ -2,37 +2,21 @@
 # include"projectile.h"
 # include"player.h"
 # include"world.h"
+# include"BossState.h"
 
-extern std::vector<Projectile*> projectiles;
 extern Player player;
 extern Boss boss;
+extern std::vector<Projectile*> projectiles;
 
 // 将颜色根据 alpha 进行亮度缩放，模拟渐显
 COLORREF Fade(COLORREF c, float a) {
     return RGB(GetRValue(c) * a, GetGValue(c) * a, GetBValue(c) * a);
 }
 
-// 二阶段 Boss 可以瞬移的锚点 (X, Y)
-// 这些坐标参考了你在 world.cpp 里生成的台阶位置
-// 建议 Y 坐标比台阶高 100-150 像素，让 Boss 悬浮在台阶上方
-struct BossAnchor {
-    float x, y;
-};
-
-// 预设的瞬移点列表 (根据你的 GenerateStairs 数据推算的)
-std::vector<BossAnchor> phaseTwoAnchors = {
-
-    {500 + 100, 200 - 350},
-    {120 + 100, 50 - 350},
-    {800 + 100, 0 - 350},
-    {480 + 100, -300 - 350},
-    {0 + 100, -200 - 350},
-    {980 + 100, -280 - 350}
-};
-
 Boss::Boss() {
         x = WINDOW_W / 2;
         y = -100; // 悬浮在空中
+        currentState = new PhaseOneState(); // 初始状态
         InitSunCache();
         InitHitCache();
 }
@@ -105,57 +89,9 @@ void Boss::update() {
         if (!trails.empty()) trails.erase(trails.begin());
         
     }
-
-    // --- 二阶段复活判定 ---
-    // 条件：Boss是隐藏的 + 处于攀爬阶段 + 二阶段还没正式激活 + 玩家爬得够高了
-    // 假设你的最后一个台阶大概在 y = -300 左右，那玩家跳到 y < -400 就触发
-    if (!active && PhaseTwo && !isPhaseTwoActive && player.y < -200) {
-        active = true;           // 1. 显示 Boss
-        isPhaseTwoActive = true; // 2. 标记二阶段战斗正式开始
-        hp = 500;                // 3. 重置血量 (随你定)
-        x = WINDOW_W / 2;        // 4. 初始位置：屏幕中间
-        y = -600;                // 5. 初始高度：在玩家头顶出现
-        alpha = 0.0f;            // 6. 重新开始淡入动画
-        PhaseTwo = false;
-
-        // 这里可以重置一下瞬移状态，防止刚出来就乱飞
-        isTeleporting = false;
-        phaseTwoTargetIndex = -1;
-
-        trails.clear();
-    }
-
-    // --- 死亡转场逻辑 ---
-    if (hp <= 0 && active) {
-        // 1. Boss 消失
-        active = false;
-
-        PhaseTwo = true;
-
-        // 2. 停止所有攻击状态
-        isFinalPhase = false;
-        orbAttackActive = false;
-        swordAttackActive = false;
-        burstAttackActive = false;
-        laserAttackActive = false;
-
-        // 3. 清理地刺 (重要！否则玩家没法走)
-        currentSpikeState = SPIKE_HIDDEN;
-
-        // 4. 触发阶梯生成 (我们需要在 world.h 里声明这个函数)
-        GenerateStairs();
-
-        // 1. 清空原来的攻击物 (可选，防止残留的剑伤到玩家)
-        projectiles.clear();
-
-        // 5. 可以在这里播放一个震屏或者音效，增加仪式感
-        // PlaySound(...);
-        return;
-    }
     
-    if (hp <= 0 && isPhaseTwoActive) {
-        isDefeated = true;
-    }
+    UpdateAttacks();
+    UpdateStateMachine();
 }
 
 void Boss::InitSunCache() {
@@ -403,8 +339,6 @@ void Boss::SpawnSwordBurst() {
     }
 }
 
-// 三连激光
-
 void Boss::SpawnLaserBurst() {
     //printf("辐射激光 - 第 %d 波\n", laserWaveCount + 1);
 
@@ -435,18 +369,28 @@ void Boss::SpawnLaserBurst() {
     }
 }
 
-// Boss AI逻辑
-void Boss::BossAI() {
-
-	if (isDefeated) return; // 如果Boss已经被击败，跳过AI逻辑
-
-	// 入场未完成，暂停攻击逻辑
-    if (alpha < 1.0f) {
-        lastAttackTime = GetTickCount();
-        return;
+void Boss::ChangeState(BossState* newState) {
+    if (currentState) {
+        currentState->Exit(*this);
+        delete currentState; 
     }
-    
-    DWORD currentTime = GetTickCount();
+	currentState = newState;
+    if (currentState) {
+        currentState->Enter(*this);
+    }
+}
+
+// 在 Boss::update 里调用这个
+void Boss::UpdateStateMachine() {
+    if (currentState) {
+        currentState->Execute(*this);
+    }
+}
+
+// Boss 具体的攻击逻辑，根据BOSS状态里传出的信号执行对应的动作
+void Boss::UpdateAttacks(){
+
+	DWORD currentTime = GetTickCount();
 
     // 处理环形剑连发逻辑
     if (burstAttackActive) {
@@ -526,193 +470,5 @@ void Boss::BossAI() {
             lastAttackTime = currentTime; // 结束攻击
         }
         return; // 激光期间独占 AI
-    }
-
-    // =========================================================
-    //  第二部分：大脑决策 (决定下一步干什么)
-    // =========================================================
-
-    // --- 如果是二阶段，决策权交给 PhaseTwoAI ---
-    if (isPhaseTwoActive) {
-        PhaseTwoAI(); // 委托给二阶段 AI 处理
-        return;       // 只要在二阶段，就不跑后面的一阶段逻辑
-    }
-
-    // --- 攀爬阶段休息 ---
-    if (PhaseTwo) {return;}
-
-    // --- 三阶段触发判定 ---
-    if (hp <= 200 && !isFinalPhase) {
-        isFinalPhase = true;
-
-        // 1. 清空所有正在进行的旧攻击状态
-        orbAttackActive = false;
-        swordAttackActive = false;
-        burstAttackActive = false;
-        laserAttackActive = false;
-
-        // 2. 强行回归中心点
-        targetX = WINDOW_W / 2.0f;
-        isTeleporting = true;
-
-        // 3. 强行修改地刺逻辑 (我们可以直接修改全局变量)
-        currentSpikeState = SPIKE_ACTIVE;
-        // 这里我们可以稍微改一下 SpikeManager，让它支持“全屏两边刺”
-        return;
-    }
-
-    // --- 三阶段疯狂模式逻辑 ---
-    if (isFinalPhase) {
-        // 锁定位置：防止位移结束后再次触发随机位移
-        if (!isTeleporting) x = WINDOW_W / 2.0f;
-
-        // 持续使用垂直剑雨，缩短间隔
-        static DWORD lastFinalSwordTime = 0;
-        if (currentTime - lastFinalSwordTime > 900) { // 0.8秒一波，非常密集
-            SpawnSwordWallVertical();
-            lastFinalSwordTime = currentTime;
-        }
-        return; // 拦截后续的老 AI 逻辑
-    }
-
-    // 基础攻击间隔
-    if (currentTime - lastAttackTime > 1500) {
-        lastAttackTime = currentTime;
-        
-		// 避免连续出现同一种攻击
-        static int lastAttack = -1;
-        int attackType;
-
-        // --- 核心逻辑修改：每 3 次攻击固定位移一次 ---
-        attackCycle++; // 每次进入攻击选择，计数加 1
-
-        if (attackCycle >= 3) {
-            // 达到第 3 次，强制执行位移 (attackType 5)
-            attackType = 6;
-            attackCycle = 0; // 重置计数器
-        }
-        else {
-            // 前 3 次，在 0-5 招式之间随机（不含 6）
-            do {
-                attackType = rand() % 6;
-            } while (attackType == lastAttack);
-        }
-
-        //printf("[AI] pick attackType = %d\n", attackType);
-
-        // 光球攻击
-        if (attackType == 0) {
-            orbAttackActive = true;
-            orbAttackCount = 0;
-            orbAttackLastTime = currentTime;
-        }
-        // 横剑雨
-        else if (attackType == 1) { 
-            swordAttackActive = true;
-            swordAttackType = 1;
-            swordAttackCount = 0;
-            swordAttackFromLeft = rand() % 2 == 0;
-        }
-        // 纵向剑雨
-        else if (attackType == 2) {
-            swordAttackActive = true;
-            swordAttackType = 2;
-            swordAttackCount = 0;
-        }
-        // 光柱攻击
-        else if (attackType == 3) {
-            SpawnBeam();
-        }
-        // 环形剑攻击
-        else if (attackType == 4) {
-            burstAttackActive = true;
-            burstWaveCount = 0;
-            lastBurstTime = GetTickCount();
-        }
-        else if (attackType == 5) { // 新增：三连激光
-            laserAttackActive = true;
-            laserWaveCount = 0;
-            lastLaserTime = currentTime - 1000; // 这里的减法是为了让第一波立即发射
-        }
-        else if (attackType == 6) {
-            targetX = WINDOW_W * (rand() % 3 + 1) / 4; // 计算目标四分点
-            isTeleporting = true; // 开启位移状态
-            //printf("[AI] Teleport to targetX = %f\n", targetX);
-        }
-        
-    }
-
-}
-
-void Boss::PhaseTwoAI() {
-    DWORD now = GetTickCount();
-
-    // 0. 状态检查：如果在瞬移或攻击中，啥都别干
-    if (isTeleporting || orbAttackActive || swordAttackActive || burstAttackActive || laserAttackActive) {
-        return;
-    }
-
-    // 1. 瞬移决策逻辑
-    if (phaseTwoTargetIndex == -1) {
-        // 随机选一个新位置
-        int newIndex = rand() % phaseTwoAnchors.size();
-
-        // 简单的防重复：如果跟上次一样，就取下一个
-        if (newIndex == phaseTwoTargetIndex) {
-            newIndex = (newIndex + 1) % phaseTwoAnchors.size();
-        }
-        phaseTwoTargetIndex = newIndex;
-
-        // 启动瞬移
-        isTeleporting = true;
-        teleportStartTime = now;
-
-        // 设置目标 (更新 targetX 和 targetY)
-        targetX = phaseTwoAnchors[newIndex].x;
-        targetY = phaseTwoAnchors[newIndex].y;
-
-        // 决定到了之后打几次 (1次或2次)
-        phaseTwoAttackCount = 1 + rand() % 2;
-        return;
-    }
-
-    // 2. 攻击决策逻辑
-    if (phaseTwoAttackCount > 0) {
-        // 瞬移到位后，发呆 1 秒再攻击，给玩家反应时间
-        static DWORD waitTimer = 0;
-        if (now - waitTimer < 1000) return; // 等待中...
-
-        // 随机选招式 (去掉了不适合高空的纵向剑雨)
-        int attackType = rand() % 4;
-
-        if (attackType == 0) { // 光球
-            orbAttackActive = true;
-            orbAttackCount = 0;
-            orbAttackLastTime = now;
-        }
-        else if (attackType == 1) { // 横向飞剑 (需要修改生成函数支持高度！)
-            swordAttackActive = true;
-            swordAttackType = 1; // 标记为横向
-            swordAttackCount = 0;
-            swordAttackLastTime = now;
-            swordAttackFromLeft = rand() % 2 == 0;
-        }
-        else if (attackType == 2) { // 脸刺 (Burst)
-            burstAttackActive = true;
-            burstWaveCount = 0;
-            lastBurstTime = now;
-        }
-        else if (attackType == 3) {
-			laserAttackActive = true;
-			laserWaveCount = 0;
-			lastLaserTime = now - 1000; // 这里的减法是为了让第一波立即发射
-        }
-
-        phaseTwoAttackCount--; // 消耗一次攻击次数
-        waitTimer = now;       // 重置等待计时
-    }
-    else {
-        // 3. 次数用尽 -> 准备下一次瞬移
-        phaseTwoTargetIndex = -1; // 设置为 -1 会在下一帧触发上面的瞬移逻辑
     }
 }

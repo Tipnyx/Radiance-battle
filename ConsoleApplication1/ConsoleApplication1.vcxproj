@@ -128,6 +128,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="boss.cpp" />
+    <ClCompile Include="BossState.cpp" />
     <ClCompile Include="GameManager.cpp" />
     <ClCompile Include="player.cpp" />
     <ClCompile Include="main.cpp" />
@@ -135,6 +136,7 @@
     <ClCompile Include="world.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BossState.h" />
     <ClInclude Include="GameManager.h" />
     <ClInclude Include="boss.h" />
     <ClInclude Include="projectile.h" />
