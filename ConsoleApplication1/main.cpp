@@ -49,7 +49,7 @@ int main() {
     BeginBatchDraw();
     IMAGE img_bg;
 	loadimage(&img_bg, _T("background.png"), WINDOW_W + 200, WINDOW_H);
-    //putimage((int)(-cameraX * 0.3f), 0, &img_bg);
+
     InitPlatform();
     
     while (true) {

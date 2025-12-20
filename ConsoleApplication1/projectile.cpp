@@ -7,6 +7,12 @@
 
 Rect Projectile::getRect() { return { x, y, w, h }; } // 通用的获取碰撞箱方法，用原点+长宽的矩形表示
 
+IMAGE Sword::imgSwordH_Mask;
+IMAGE Sword::imgSwordH_Src;
+IMAGE Sword::imgSwordV_Mask;
+IMAGE Sword::imgSwordV_Src;
+IMAGE Orb::imgOrb;
+
 // Debug模式下，画出实体的碰撞箱，用红色线框表示
 void Projectile::drawDebug() {
         if (!debug_mode) return;
@@ -15,6 +21,42 @@ void Projectile::drawDebug() {
         Rect r = getRect();
         rectangle((int)r.x - cameraX, (int)r.y - cameraY, (int)(r.x - cameraX + r.w), (int)(r.y - cameraY + r.h));
  }
+
+// --- 2. 辅助函数：自动生成掩码图和前景图 ---
+// 这是一个通用的黑科技函数，帮你把一张黑底彩图变成 EasyX 标准的透明贴图对
+void MakeSprite(IMAGE* targetSrc, IMAGE* targetMask, int w, int h, void(*drawFunc)(int, int)) {
+    // 初始化大小
+    targetSrc->Resize(w, h);
+    targetMask->Resize(w, h);
+
+    // 1. 绘制前景图 (Source) - 黑底彩物
+    SetWorkingImage(targetSrc);
+    cleardevice(); // 填充全黑
+    drawFunc(w / 2, h / 2); // 在中心绘制，这里回调你的绘图代码
+
+    // 2. 绘制掩码图 (Mask) - 白底黑物
+    // 原理：把前景图中“有颜色”的地方变黑，“黑色背景”变白
+    SetWorkingImage(targetMask);
+    cleardevice();
+
+    // 复制前景图过来处理
+    putimage(0, 0, targetSrc);
+
+    // 遍历像素生成掩码 (这是最简单的生成掩码方法)
+    DWORD* pSrc = GetImageBuffer(targetSrc);
+    DWORD* pMask = GetImageBuffer(targetMask);
+    int count = w * h;
+    for (int i = 0; i < count; i++) {
+        // 如果原图像素不为黑 (有内容)
+        if (pSrc[i] != 0) {
+            pMask[i] = 0; // 掩码设为黑色 (保护区域)
+        }
+        else {
+            pMask[i] = 0xFFFFFF; // 背景设为白色 (透明区域)
+        }
+    }
+    SetWorkingImage(NULL); // 恢复绘图目标
+}
 
 
 // --- Orb类的方法实现 ---
@@ -248,7 +290,7 @@ void Sword::draw(){
         setlinecolor(WHITE);
     }
 
-    // --- 使用你最满意的纯白核心几何体 ---
+    // --- 纯白核心几何体 ---
     float totalLen = 200.0f;
     float bladeW = 7.0f;
     float tipLen = 20.0f;

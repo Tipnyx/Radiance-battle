@@ -159,13 +159,14 @@ void Boss::update() {
 }
 
 void Boss::InitSunCache() {
-    // 创建一个足够大的画布 (比如 200x200)
+    // 创建一个足够大的画布 (300x300)
+    // 注意，原点在画布中心，而不是(0,0）点
     sunCache.Resize(300, 300);
 
     // 切换绘图目标到这张图片上
     SetWorkingImage(&sunCache);
 
-    // 把你原来的太阳绘制逻辑搬过来，坐标改为图片中心 (100, 100)
+    // 画布中心
     int mid = 150;
     for (int i = 0; i < 90; i++) {
         // 注意：这里先不要 Fade，alpha 留到贴图时整体处理

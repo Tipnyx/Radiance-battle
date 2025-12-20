@@ -36,10 +36,13 @@ struct Orb : Projectile {
 	DWORD spawnTime; // 生成时间
 	int attackCount = 0; // 已完成的攻击次数，这个是和MAX_ATTACKS结合使用的
 
+	static IMAGE imgOrb;
+
 	Orb(float sx, float sy, float px, float py); // 传入生成位置和玩家位置，传入玩家位置主要是为了追踪？
 	void update(Player& p) override; 
 	void draw() override;
 	Rect getRect() override;
+
 };
 
 
@@ -57,12 +60,20 @@ struct Sword :  Projectile {
 	// --- 弧线参数 ---
 	float curveRate = 0; // 每一帧旋转的弧度
 
+	static IMAGE imgSwordH_Mask; // 横向掩码
+	static IMAGE imgSwordH_Src;  // 横向前景
+	static IMAGE imgSwordV_Mask; // 纵向掩码
+	static IMAGE imgSwordV_Src;  // 纵向前景
+
 	Sword(float startX, float startY, float _vx, float _vy, float _angle, bool isCurve=false);
 	std::vector<POINT> getHitPoints();
 	void update(Player& p) override;
 	void draw() override;
 	Rect getRect() override;
 	void drawDebug() override;
+
+	static void InitSwordSprites(); 
+
 };
 
 // 这个是光柱，只有左右移动，没有多余的状态，所以这里没有enum
