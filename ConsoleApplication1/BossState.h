@@ -5,6 +5,11 @@
 
 class Boss;
 
+// 二阶段 Boss 可以瞬移的锚点 (X, Y)
+struct BossAnchor {
+    float x, y;
+};
+
 // 定义了Boss的状态接口
 class BossState {
 public:
@@ -40,6 +45,21 @@ public:
 class PhaseTwoState : public BossState {
 private:
     std::vector<std::function<void(Boss&)>> attacks;
+    int lastAttack = -1; //记录上一次的攻击
+    DWORD lastAttackTime = 0; //记录上一次攻击的时间
+    int attackCycle = 0;
+	int attackCount = 2; //每次瞬移后攻击次数，1或2
+    int TargetIndex = -1;  // 当前瞬移的目标是第几个锚点
+
+    std::vector<BossAnchor> Anchors = {
+    {500 + 100, 200 - 350},
+    {120 + 100, 50 - 350},
+    {800 + 100, 0 - 350},
+    {480 + 100, -300 - 350},
+    {0 + 100, -200 - 350},
+    {980 + 100, -280 - 350}
+    };
+
 public:
     PhaseTwoState();
     void Enter(Boss& boss) override;

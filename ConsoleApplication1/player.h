@@ -3,10 +3,19 @@
 
 // 玩家类
 class Player {
+private:
+    const float GRAVITY = 1.0f;  //重力
+    const float MOVE_SPEED = 6.0f; // 水平移动速度
+    const float JUMP_FORCE = -18.0f; // 跳跃初速度
+    const float DASH_SPEED = 15.0f; // 冲刺速度
+    const int DASH_DURATION = 300; // ms
+    const int SHADOW_DASH_COOLDOWN = 1500; // 暗影冲刺冷却 (1.5s)
+    const int NORMAL_DASH_COOLDOWN = 400;  // 普通冲刺冷却 (极短)
 public:
     float x, y;
     float vx, vy;
     int w = 40, h = 65;
+
     bool onGround = false;
     int facing = 1; // 1 Right, -1 Left
 
@@ -27,10 +36,6 @@ public:
     DWORD dashStartTime = 0;
     DWORD lastShadowDashTime = 0;
     bool hasDashedInAir; // 记录是否已经在空中冲刺过
-
-    const int DASH_DURATION = 300; // ms
-    const int SHADOW_DASH_COOLDOWN = 1500; // 暗影冲刺冷却 (1.5s)
-    const int NORMAL_DASH_COOLDOWN = 400;  // 普通冲刺冷却 (极短)
     DWORD lastNormalDashTime = 0;
 
     // 攻击相关
@@ -41,7 +46,6 @@ public:
     int atkTimer = 0;         // 当前攻击计时器（帧数）
     const int atkDuration = 10; // 攻击持续的总帧数 (约0.16秒)
 
-
     // 状态
     int hp = 10;
     bool isInvincible = false; // 无敌帧
@@ -51,6 +55,7 @@ public:
         float x, y;
         int life; // 寿命，从 255 减到 0
     };
+
     std::vector<ShadowGhost> ghosts;
     DWORD lastGhostTime = 0; // 控制残影生成频率
 

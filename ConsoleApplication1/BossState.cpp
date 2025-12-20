@@ -82,18 +82,18 @@ void PhaseOneState::Execute(Boss& boss) {
 
         // 持续使用垂直剑雨，缩短间隔
         static DWORD lastFinalSwordTime = 0;
-        if (currentTime - lastFinalSwordTime > 900) { // 0.8秒一波，非常密集
+        if (currentTime - lastFinalSwordTime > 1000) { // 0.8秒一波，非常密集
 			attacks[2](boss); // 使用纵向剑雨
             lastFinalSwordTime = currentTime;
         }
         return;
     }
 
-    if (currentTime - lastAttackTime > 1500) {
+    if (currentTime - lastAttackTime > 2500) {
         lastAttackTime = currentTime;
 
         // 简单的随机出招
-        static int lastAttack = -1;
+        lastAttack = -1;
         int attackType;
         attackCycle++;
         if (attackCycle >= 3) { attackType = 6; attackCycle = 0; }
@@ -153,16 +153,18 @@ PhaseTwoState::PhaseTwoState(){
 }
 
 void PhaseTwoState::Enter(Boss& boss) {
+    TargetIndex = -1;
+    
     boss.active = true;
-    boss.hp = 10;
+    boss.hp = 500;
     boss.isPhaseTwoActive = true; // 二阶段标记
     boss.x = WINDOW_W / 2;
     boss.y = -600;
     boss.isPhaseTransition = false;
     boss.isTeleporting = false;
-    boss.phaseTwoTargetIndex = -1;
+    
     boss.trails.clear();
-
+    
 }
 
 void PhaseTwoState::Execute(Boss& boss) {
@@ -183,58 +185,48 @@ void PhaseTwoState::Execute(Boss& boss) {
     }
 
     // 移动逻辑
-    if (boss.phaseTwoTargetIndex == -1) {
+    if (TargetIndex == -1) {
         // 随机选一个新位置
-        int newIndex = rand() % boss.phaseTwoAnchors.size();
+        int newIndex = rand() % Anchors.size();
         
         // 简单的防重复：如果跟上次一样，就取下一个
-        if (newIndex == boss.phaseTwoTargetIndex) {
-            newIndex = (newIndex + 1) % boss.phaseTwoAnchors.size();
+        if (newIndex == TargetIndex) {
+            newIndex = (newIndex + 1) % Anchors.size();
         }
-        boss.phaseTwoTargetIndex = newIndex;
+        TargetIndex = newIndex;
 
         // 启动瞬移
         boss.isTeleporting = true;
-        boss.teleportStartTime = currentTime;
 
         // 设置目标 (更新 targetX 和 targetY)
-        boss.targetX = boss.phaseTwoAnchors[newIndex].x;
-        boss.targetY = boss.phaseTwoAnchors[newIndex].y;
+        boss.targetX = Anchors[newIndex].x;
+        boss.targetY = Anchors[newIndex].y;
 
         // 决定到了之后打几次 (1次或2次)
-        boss.phaseTwoAttackCount = 1 + rand() % 2;
+        attackCount = 1 + rand() % 2;
+        lastAttackTime = currentTime;
+
         return;
     }
 
-    if (boss.phaseTwoAttackCount > 0) {
-    
-        // 移动后，攻击计时器为 0
-        if (!boss.isTeleporting && boss.phaseTwoWaitTimer == 0) {
-            boss.phaseTwoWaitTimer = currentTime;
+    if (attackCycle <= attackCount) {
+        // 攻击间隔大于2.5秒
+        if (currentTime - lastAttackTime > 2500) {
+            lastAttackTime = currentTime;
+            // 随机选招，防连续同一招
+            lastAttack = -1;
+            int attackType;
+            do { attackType = rand() % 5; } while (attackType == lastAttack);
+            lastAttack = attackType;
+
+            // 出招
+            attacks[attackType](boss);
+            attackCycle++;
         }
-
-        // 攻击间隔大于1秒
-        if (currentTime - boss.phaseTwoWaitTimer < 1000) return;
-
-        // 随机选招，防连续同一招
-        static int lastAttack = -1;
-        int attackType;
-        do { attackType = rand() % 5; } while (attackType == lastAttack);
-        lastAttack = attackType;
-
-        // 出招
-        attacks[attackType](boss);
-
-        // 消耗一次攻击次数
-        boss.phaseTwoAttackCount--;
-
-        // 攻击发出去后，重置计时器为当前时间，为下一招做准备
-        boss.phaseTwoWaitTimer = currentTime;
     }
     else {
-        // 次数用尽 ，准备下一次瞬移
-        boss.phaseTwoTargetIndex = -1; // 设置为 -1 会在下一帧触发上面的瞬移逻辑
-        boss.phaseTwoWaitTimer = 0; 
+        TargetIndex = -1; // 设置为 -1 会在下一帧触发上面的瞬移逻辑
+		attackCycle = 0;
     }
 }
 

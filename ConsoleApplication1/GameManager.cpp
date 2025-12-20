@@ -47,6 +47,7 @@ void GameReset(DWORD& gameStartTime) {
     boss.isPhaseTwoActive = false;
     boss.isPhaseTransition = false;
     boss.isPhaseClimbing = false;
+    boss.isPhaseThree = false;
 
     platforms.clear();
     platforms.push_back({ (float)PLATFORM_X, (float)PLATFORM_Y, (float)PLATFORM_W, 500 });

@@ -86,8 +86,6 @@ struct Beam : Projectile {
 	void draw() override;
 };
 
-
-
 enum LaserState { LASER_PREPARE, LASER_FIRE, LASER_FADE }; // Ô¤¾¯¡¢·¢Éä¡¢ÏûÊ§
 
 struct Laser : Projectile {

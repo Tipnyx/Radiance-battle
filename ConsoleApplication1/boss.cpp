@@ -435,7 +435,8 @@ void Boss::UpdateAttacks(){
         // 注意：这里不需要 return，因为它是持续背景干扰，不占用其他动作位
     }
 
-    // 处理环形剑连发逻辑
+
+    // 处理环形剑连发逻辑 2.5s
     if (burstAttackActive) {
         // 计算当前大招已经进行了多久
         DWORD elapsed = currentTime - lastBurstTime;
@@ -453,12 +454,12 @@ void Boss::UpdateAttacks(){
         // 结束判定：1.5s 后（给第二波留 1s 飞行时间）重置状态
         else if (burstWaveCount == 2 && elapsed >= 1000) {
             burstAttackActive = false;
-            lastAttackTime = currentTime;
+            
         }
         return;
     }
 
-    //光球攻击正在进行
+    //光球攻击正在进行 3s发出第三颗
     if (orbAttackActive) {
         if (isPhaseThree) {
             SpawnOrbs();
@@ -472,12 +473,12 @@ void Boss::UpdateAttacks(){
         //攻击结束
         if (orbAttackCount >= ORB_ATTACK_TOTAL) {
             orbAttackActive = false;
-            lastAttackTime = currentTime;
+            
         }
         return; //光球攻击期间其他攻击不能进行
     }
 
-    //剑雨攻击正在进行
+    //剑雨攻击正在进行 2.5s发出第三波
     if (swordAttackActive) {
         if (swordAttackType == 1) {
             if (swordAttackCount < SWORD_ATTACK_TOTAL && currentTime - swordAttackLastTime > SWORD_ATTACK_INTERVAL_HORIZON) {
@@ -495,7 +496,7 @@ void Boss::UpdateAttacks(){
         }
         if (swordAttackCount >= SWORD_ATTACK_TOTAL) {
             swordAttackActive = false;
-            lastAttackTime = currentTime;
+            
         }
         return;
     }
@@ -504,7 +505,7 @@ void Boss::UpdateAttacks(){
     if (laserAttackActive) {
         DWORD elapsed = currentTime - lastLaserTime;
 
-        // 节奏：每隔 800ms 射一波 (预警0.7s + 爆发0.5s，所以波次间要有重叠才刺激)
+        // 节奏：每隔 500ms 射一波 (预警0.7s + 爆发0.5s，所以波次间要有重叠才刺激)
         if (elapsed > 500 && laserWaveCount < 3) {
             SpawnLaserBurst();
             lastLaserTime = currentTime;
@@ -512,9 +513,9 @@ void Boss::UpdateAttacks(){
         }
 
         // 三波射完后，多留点时间给最后的一波消失
-        if (laserWaveCount >= 3 && elapsed > 1500) {
+        if (laserWaveCount >= 3 && elapsed > 500) {
             laserAttackActive = false;
-            lastAttackTime = currentTime; // 结束攻击
+            
         }
         return; // 激光期间独占 AI
     }
