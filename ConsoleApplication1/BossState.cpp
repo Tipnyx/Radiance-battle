@@ -38,8 +38,6 @@ PhaseOneState::PhaseOneState() {
         });
 }
 
-
-
 void PhaseOneState::Execute(Boss& boss) {
 
     DWORD currentTime = GetTickCount();
@@ -55,12 +53,12 @@ void PhaseOneState::Execute(Boss& boss) {
         boss.laserAttackActive) return;
 
     if (boss.hp <= 0 && boss.active) {
-        boss.ChangeState(new ClimbingState());
+        boss.ChangeState(new TransitionState());
         return;
     }
 
-    if (boss.hp <= 200 && !boss.PhaseOneLast) {
-        boss.PhaseOneLast = true;
+    if (boss.hp <= 200 && !boss.isPhaseOneLast) {
+        boss.isPhaseOneLast = true;
 
         // 1. 清空所有正在进行的旧攻击状态
         boss.orbAttackActive = false;
@@ -78,7 +76,7 @@ void PhaseOneState::Execute(Boss& boss) {
         return;
     }
 
-    if (boss.PhaseOneLast) {
+    if (boss.isPhaseOneLast) {
         // 锁定位置：防止位移结束后再次触发随机位移
         if (!boss.isTeleporting) boss.x = WINDOW_W / 2.0f;
 
@@ -100,17 +98,18 @@ void PhaseOneState::Execute(Boss& boss) {
         attackCycle++;
         if (attackCycle >= 3) { attackType = 6; attackCycle = 0; }
         else { do { attackType = rand() % 6; } while (attackType == lastAttack); }
+		lastAttack = attackType;
 
         attacks[attackType](boss); // 执行之前注册招式表里写的lambda
     }
 }
 
-void ClimbingState::Enter(Boss& boss) {
+void TransitionState::Enter(Boss& boss) {
 	boss.active = false; // Boss 消失
-    boss.PhaseClimb = true;
+    boss.isPhaseTransition = true;
     boss.hp = 0;
 
-    boss.PhaseOneLast = false;
+    boss.isPhaseOneLast = false;
     boss.orbAttackActive = false;
     boss.swordAttackActive = false;
     boss.burstAttackActive = false;
@@ -122,9 +121,10 @@ void ClimbingState::Enter(Boss& boss) {
     projectiles.clear();
 }
 
-void ClimbingState::Execute(Boss& boss) {
-	if (!boss.active && boss.PhaseClimb && !boss.isPhaseTwoActive && player.y < -200) {
+void TransitionState::Execute(Boss& boss) {
+	if (!boss.active && boss.isPhaseTransition && !boss.isPhaseTwoActive && player.y < -200) {
 		boss.ChangeState(new PhaseTwoState());
+        return;
 	}
 }
 
@@ -154,11 +154,11 @@ PhaseTwoState::PhaseTwoState(){
 
 void PhaseTwoState::Enter(Boss& boss) {
     boss.active = true;
-    boss.hp = 500;
+    boss.hp = 10;
     boss.isPhaseTwoActive = true; // 二阶段标记
     boss.x = WINDOW_W / 2;
     boss.y = -600;
-    boss.PhaseClimb = false;
+    boss.isPhaseTransition = false;
     boss.isTeleporting = false;
     boss.phaseTwoTargetIndex = -1;
     boss.trails.clear();
@@ -169,22 +169,24 @@ void PhaseTwoState::Execute(Boss& boss) {
 
     DWORD currentTime = GetTickCount();
 
+	// 位移或者攻击中不处理其他逻辑
     if (boss.isTeleporting ||
         boss.orbAttackActive ||
         boss.swordAttackActive ||
         boss.burstAttackActive ||
         boss.laserAttackActive) return;
 
+	// 转阶段判定
     if (boss.hp <= 0 && boss.isPhaseTwoActive) {
-        boss.isDefeated = true;
-		boss.active = false;
-		return;
+        boss.ChangeState(new ClimbingState());
+        return;
     }
 
     // 移动逻辑
     if (boss.phaseTwoTargetIndex == -1) {
         // 随机选一个新位置
         int newIndex = rand() % boss.phaseTwoAnchors.size();
+        
         // 简单的防重复：如果跟上次一样，就取下一个
         if (newIndex == boss.phaseTwoTargetIndex) {
             newIndex = (newIndex + 1) % boss.phaseTwoAnchors.size();
@@ -205,23 +207,56 @@ void PhaseTwoState::Execute(Boss& boss) {
     }
 
     if (boss.phaseTwoAttackCount > 0) {
-        // 瞬移到位后，发呆 1 秒再攻击，给玩家反应时间
-        static DWORD waitTimer = 0;
-        if (currentTime - waitTimer < 1000) return; // 等待中...
+    
+        // 移动后，攻击计时器为 0
+        if (!boss.isTeleporting && boss.phaseTwoWaitTimer == 0) {
+            boss.phaseTwoWaitTimer = currentTime;
+        }
 
-        // 简单的随机出招
-        int attackType = rand() % 5;
+        // 攻击间隔大于1秒
+        if (currentTime - boss.phaseTwoWaitTimer < 1000) return;
 
+        // 随机选招，防连续同一招
+        static int lastAttack = -1;
+        int attackType;
+        do { attackType = rand() % 5; } while (attackType == lastAttack);
+        lastAttack = attackType;
+
+        // 出招
         attacks[attackType](boss);
 
-        boss.phaseTwoAttackCount--; // 消耗一次攻击次数
-        waitTimer = currentTime;       // 重置等待计时
+        // 消耗一次攻击次数
+        boss.phaseTwoAttackCount--;
+
+        // 攻击发出去后，重置计时器为当前时间，为下一招做准备
+        boss.phaseTwoWaitTimer = currentTime;
     }
     else {
-        // 3. 次数用尽 -> 准备下一次瞬移
+        // 次数用尽 ，准备下一次瞬移
         boss.phaseTwoTargetIndex = -1; // 设置为 -1 会在下一帧触发上面的瞬移逻辑
+        boss.phaseTwoWaitTimer = 0; 
     }
 }
+
+void ClimbingState::Enter(Boss& boss) {
+    boss.hp = 500;
+    boss.isPhaseTwoActive = false;
+    boss.targetX = WINDOW_W / 2;
+    boss.targetY = -4900;
+    boss.isTeleporting = true;
+    boss.isPhaseClimbing = true;
+
+	GenerateUPStairs(); // 生成向上的台阶
+
+    boss.trails.clear();
+    projectiles.clear();
+
+}
+
+void ClimbingState::Execute(Boss& boss) {
+    
+}
+
 
     
     

@@ -29,6 +29,31 @@ void GenerateStairs() {
     make_one_stair(980, -280, 100, 50);
 }
 
+void GenerateUPStairs() {
+    // --- 承接二阶段顶部的过渡平台 ---
+    // 二阶段最高的台阶在 (480, -300)，我们从这里开始往上带
+    make_one_stair(655, -550, 175, 50);
+    make_one_stair(480, -800, 100, 50);
+    make_one_stair(700, -1050, 100, 100); 
+	make_one_stair(745, -1300, 100, 50);  
+    make_one_stair(470, -1550, 175, 50);  
+    make_one_stair(390, -1800, 100, 100);
+    make_one_stair(515, -2050, 100, 50);
+    make_one_stair(635, -2300, 175, 50);
+    make_one_stair(510, -2550, 100, 50);
+    make_one_stair(760, -2800, 100, 100);
+    make_one_stair(820, -3050, 100, 50);
+    make_one_stair(500, -3300, 175, 50);
+    make_one_stair(410, -3550, 100, 100);
+    make_one_stair(550, -3800, 100, 50);
+    make_one_stair(650, -4050, 175, 50);
+    make_one_stair(601, -4300, 100, 50);
+
+    // --- 最终决战平台 ---
+    make_one_stair(401, -4550, 100, 50);
+    make_one_stair(801, -4550, 100, 50);
+}
+
 void InitPlatform(){
     platforms.clear();
     platforms.push_back({ (float)PLATFORM_X, (float)PLATFORM_Y, (float)PLATFORM_W, 500 });
@@ -237,7 +262,7 @@ void LastSpike() {
 void SpikeManager(DWORD gameStartTime) {
     DWORD now = GetTickCount();
 
-    if (boss.PhaseOneLast) {
+    if (boss.isPhaseOneLast) {
         LastSpike();
         return;
     }
@@ -245,7 +270,7 @@ void SpikeManager(DWORD gameStartTime) {
     // 1. 状态机更新逻辑
     if (currentSpikeState == SPIKE_HIDDEN) {
 		// boss 血量低于 650 -> 进入预警状态
-        if (boss.hp < 650 && !boss.PhaseClimb) {
+        if (boss.hp < 650 && !boss.isPhaseTransition) {
             currentSpikeState = SPIKE_WARNING;
             spikeTimer = now;
             spikeOnLeft = true; // 第一次总是出现在左边

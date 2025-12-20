@@ -27,7 +27,7 @@ void GameReset(DWORD& gameStartTime) {
     for (auto p : projectiles) delete p;
     projectiles.clear();
     gameStartTime = GetTickCount();
-    boss.PhaseOneLast = false;
+    boss.isPhaseOneLast = false;
 
     // 2. 重置音乐
     // 停止当前播放
@@ -42,10 +42,12 @@ void GameReset(DWORD& gameStartTime) {
     currentSpikeState = SPIKE_HIDDEN;
     spikeTimer = 0;
 
-    currentLevelBottom = WINDOW_H;
-    boss.isPhaseTwoActive = false; // 二阶段是否激活
     boss.active = true;
-    boss.PhaseClimb = false;
+    currentLevelBottom = WINDOW_H;
+    boss.isPhaseTwoActive = false;
+    boss.isPhaseTransition = false;
+    boss.isPhaseClimbing = false;
+
     platforms.clear();
     platforms.push_back({ (float)PLATFORM_X, (float)PLATFORM_Y, (float)PLATFORM_W, 500 });
 
@@ -245,34 +247,44 @@ void DrawEntities() {
 
 void UpdateCamera(Player& p) {
 
-    if (p.y < 200 && currentLevelBottom > 400 && boss.PhaseClimb) {
-        currentLevelBottom = 400; // 抬高底线 (注意 Y 越小越高，所以是赋值更小的值)
-    }
+    float targetX = p.x - (WINDOW_W / 2.0f);
+
+	// 玩家往上走且处于二阶段转换时，抬高底线
+    if (p.y < 200 && currentLevelBottom > 400 && boss.isPhaseTransition) {currentLevelBottom = 400;}
+    if (!boss.isPhaseClimbing || (boss.isPhaseClimbing && p.y >= -4500)) { targetX = p.x - (WINDOW_W / 2.0f); }
+	if (p.y < -4400 && currentLevelBottom >= -4400 && boss.isPhaseClimbing) {
+		currentLevelBottom = -4400;
+        targetX = 0;
+	}
 
     // 目标：让玩家处于屏幕中心
 	// 被减数：想要以它为中心的那个实体的坐标；
 	// 减数：那个中心物体在屏幕上的位置
-    float targetX = p.x - (WINDOW_W / 2.0f);
+    
     cameraX += (targetX - cameraX) * 0.1f;
     if (cameraX < -200) cameraX = -200;
     if (cameraX > 200) cameraX = 200;
 
-    if (boss.active && !boss.isPhaseTwoActive) {
+    // boss存活且不是二阶段，爬梯阶段时会保持镜头Y轴在默认位置
+    if (boss.active && !boss.isPhaseTwoActive && !boss.isPhaseClimbing) {
         float targetY = 0;
-        cameraY += (targetY - cameraY) * 0.1f;
+        cameraY += (targetY - cameraY) * 0.1f; //镜头跟随
     }
     else {
+        float targetY;
         // Boss 消失了 (进入攀爬阶段) -> 开启 Y 轴自由跟随
         // 目标是让玩家保持在屏幕垂直中心偏下一点的位置
-        float targetY = p.y - WINDOW_H * 0.6f;
-
-        float maxCamY = currentLevelBottom - WINDOW_H;
-        // 限制一下，别让镜头掉到地底下去
-        if (targetY > maxCamY) targetY = maxCamY;
+        if (p.y < -4400 && boss.isPhaseClimbing ) {
+            // 锁定镜头高度，不再随玩家跳跃起伏
+            // 这个值需要根据你最终平台的实际高度微调，目标是让平台处于屏幕中下部
+            targetY = -4550 - (WINDOW_H * 0.75f);
+        }
+        else {
+            targetY = p.y - WINDOW_H * 0.55f;
+            float maxCamY = currentLevelBottom - WINDOW_H;
+            if (targetY > maxCamY) targetY = maxCamY;
+        }
 
         cameraY += (targetY - cameraY) * 0.05f;
-
-        // 双重保险：插值后如果还是超了，强制拉回来
-        //if (cameraY > maxCamY) cameraY = maxCamY;
     }
 }

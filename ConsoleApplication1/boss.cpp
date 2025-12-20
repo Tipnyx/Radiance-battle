@@ -48,10 +48,12 @@ void Boss::update() {
         // 0.15f 这个值越大，移动越快；越小，拖尾越长越慢
         x += (targetX - x) * 0.10f;
 
-        // --- 新增：Y 轴平滑移动 ---
-        // 只有二阶段才需要大幅度垂直移动
+        // --- Y 轴平滑移动 ---
         if (isPhaseTwoActive) {
             y += (targetY - y) * 0.10f;
+        }
+        else if (isPhaseClimbing) {
+			y += (targetY - y) * 0.01f; // 攀爬阶段 Y 轴移动更慢
         }
         else {
             // 一阶段还是保持原来的悬浮逻辑
@@ -70,13 +72,13 @@ void Boss::update() {
         float dist = sqrt(pow(x - targetX, 2) + pow(y - targetY, 2));
         if (dist < 2.0f) { // 稍微放宽一点判断
             x = targetX;
-            if (isPhaseTwoActive) y = targetY; // 修正 Y
+            if (isPhaseTwoActive || isPhaseClimbing) y = targetY; // 修正 Y
             isTeleporting = false;
         }
     }
     else {
         // 非位移状态下的悬浮
-        if (isPhaseTwoActive) {
+        if (isPhaseTwoActive || isPhaseClimbing) {
             // 二阶段：在当前位置悬浮
             y = targetY + hoverOffset;
         }
@@ -289,19 +291,43 @@ void Boss::SpawnSwordWallVertical() {
 
 void Boss::SpawnOrbs() {
     //printf("光球\n");
-    const float minDist = 200.0f; //最小距离
+    const float minDistToPlayer = 200.0f; //最小距离
+    const float minRectBuffer = 80.0f; //离平台的最小距离，防止刷出来直接消失
+
     float ox, oy;
     int tryCount = 0;
+    
     do {
         float angle = (rand() % 360) * 3.14159f / 180.0f;
         float dist = 300.0f;
         ox = (WINDOW_W / 2) + cos(angle) * dist;
         oy = (currentLevelBottom - 450) - sin(angle) * 100;
+        bool posValid = false;
+
         float dx = ox - (player.x + player.w / 2);
         float dy = oy - (player.y + player.h / 2);
-        if (sqrt(dx * dx + dy * dy) >= minDist) break;
+        if (sqrt(dx * dx + dy * dy) < minDistToPlayer) {
+            tryCount++;
+            continue; // 太靠近玩家，重新随机
+        }
+        
+		bool isSafe = true;
+        for (const auto& rect : platforms) {
+            // 判定点 (ox, oy) 是否在“外扩了缓冲区”的平台矩形内
+            if (ox > rect.x - minRectBuffer &&
+                ox < rect.x + rect.w + minRectBuffer &&
+                oy > rect.y - minRectBuffer &&
+                oy < rect.y + rect.h + minRectBuffer) {
+                isSafe = false;
+                break;
+            }
+        }
+
+        if (isSafe) {
+            break; // 只有避开了所有平台，才真正跳出 do-while 循环
+        }
         tryCount++;
-    } while (tryCount < 20);
+    } while (tryCount < 30);
 
     Orb* orb = new Orb(ox, oy, player.x + player.w / 2, player.y + player.h / 2);
     projectiles.push_back(orb);

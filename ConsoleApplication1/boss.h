@@ -20,12 +20,17 @@ class Boss {
 
 public:
     float x, y;
-    int hp = 400;
+    int hp = 10;
     bool active = true;
     float alpha = 0; // 用于进场时的渐显效果
 
-    bool PhaseOneLast = false; // 是否进入三阶段
-    bool PhaseClimb = false;
+    DWORD phaseTwoWaitTimer = 0;
+
+	// 状态切换变量
+    bool isPhaseOneLast = false; // 是否进入剑雨阶段
+	bool isPhaseTransition = false; // 是否正在进行阶段转换
+    bool isPhaseTwoActive = false; // 二阶段是否激活
+	bool isPhaseClimbing = false; // 是否进入攀爬阶段
 
     DWORD lastAttackTime = 0;
     DWORD lastOrbTime = 0;
@@ -70,7 +75,7 @@ public:
     void InitSunCache(); // 用于初始化绘制这张图
 
     // 二阶段战斗逻辑变量
-    bool isPhaseTwoActive = false; // 二阶段是否激活
+    
     int phaseTwoTargetIndex = -1;  // 当前瞬移的目标是第几个锚点
     int phaseTwoAttackCount = 0;   // 在当前位置还需要攻击几次
     DWORD teleportStartTime = 0;   // 记录瞬移开始的时间

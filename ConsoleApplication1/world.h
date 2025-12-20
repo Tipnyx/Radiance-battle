@@ -2,7 +2,8 @@
 #include "common.h"
 #include<ctime>
 
-void GenerateStairs();
+void GenerateStairs(); //二阶段台阶
+void GenerateUPStairs(); //攀爬阶段向上台阶
 
 void InitPlatform();
 

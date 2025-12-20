@@ -15,7 +15,7 @@ public:
 	virtual void Exit(Boss& boss) {} // 退出状态时调用，做清理工作
 };
 
-// --- 一阶段状态（地面战部分） ---
+// --- 一阶段状态 ---
 class PhaseOneState : public BossState {
 private:
     std::vector<std::function<void(Boss&)>> attacks; // 攻击模式列表
@@ -29,27 +29,26 @@ public:
     void Execute(Boss& boss) override;
 };
 
-// --- 3. 攀爬过渡状态 (Boss消失) ---
-class ClimbingState : public BossState {
+// --- 过渡状态  ---
+class TransitionState : public BossState {
 public:
     void Enter(Boss& boss) override;
     void Execute(Boss& boss) override;
 };
 
-// --- 4. 二阶段状态 (空战) ---
+// --- 二阶段状态 ---
 class PhaseTwoState : public BossState {
 private:
     std::vector<std::function<void(Boss&)>> attacks;
-    DWORD waitTimer = 0; // 瞬移后的发呆计时
 public:
     PhaseTwoState();
     void Enter(Boss& boss) override;
     void Execute(Boss& boss) override;
 };
 
-//// --- 5. 三阶段状态 (决战) ---
-//class FinalPhaseState : public BossState {
-//public:
-//    void Enter(Boss& boss) override;
-//    void Execute(Boss& boss) override;
-//};
+// --- 爬梯阶段 ---
+class ClimbingState : public BossState {
+public:
+    void Enter(Boss& boss) override;
+    void Execute(Boss& boss) override;
+};
