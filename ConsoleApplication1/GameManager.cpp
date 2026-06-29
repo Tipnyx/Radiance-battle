@@ -118,6 +118,7 @@ void ProjectileManager() {
 
             if (playerHit) {
                 if (!player.isInvincible) {
+                    TriggerScreenShake(8.0f);
                     player.hp--;
                     player.hurtTimer = player.HURT_DURATION;
                     player.isInvincible = true;
@@ -146,10 +147,7 @@ void GameLogic(DWORD& gameStartTime) {
         ProjectileManager();
     }
     else {
-        if (GetAsyncKeyState('R') & 0x8000) GameReset(gameStartTime);
-        if (GetAsyncKeyState(VK_ESCAPE) & 0x8000) {
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
-        }
+        GameReset(gameStartTime);
     }
 }
 

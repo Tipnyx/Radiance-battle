@@ -32,6 +32,22 @@ int waveCount = 0;
 float cameraX = 0;
 float cameraY = 0;
 float currentLevelBottom = WINDOW_H;
+float g_deltaTime = 1.0f / 60.0f;
+float g_shakeDur = 0, g_shakeInt = 0;
+float g_shakeX = 0, g_shakeY = 0;
+
+void TriggerScreenShake(float intensity) {
+    g_shakeInt = intensity; g_shakeDur = 0.25f;
+}
+void UpdateScreenShake(float dt) {
+    if (g_shakeDur > 0) {
+        g_shakeDur -= dt;
+        float d = g_shakeDur / 0.25f;
+        g_shakeX = (float)((rand()%100)-50)/50.0f * g_shakeInt * d;
+        g_shakeY = (float)((rand()%100)-50)/50.0f * g_shakeInt * d;
+        if (g_shakeDur <= 0) { g_shakeX=g_shakeY=0; g_shakeInt=0; }
+    }
+}
 
 GLFWwindow* window = nullptr;
 Texture g_bgTex;
@@ -106,12 +122,21 @@ int main() {
     InitPlatform();
 
     // --- 主循环 ---
+    glfwSwapInterval(1);
+    double lastTime = glfwGetTime();
     while (!glfwWindowShouldClose(window)) {
-        // 游戏逻辑（不变）
+        double now = glfwGetTime();
+        g_deltaTime = (float)(now - lastTime);
+        lastTime = now;
+        if (g_deltaTime > 0.1f) g_deltaTime = 0.1f;
+
         GameLogic(gameStartTime);
 
-        // 渲染
+        UpdateScreenShake(g_deltaTime);
+
         glClear(GL_COLOR_BUFFER_BIT);
+
+        if (g_shakeDur > 0) { glMatrixMode(GL_PROJECTION); glPushMatrix(); glTranslatef(g_shakeX, g_shakeY, 0); }
 
         // Static background (fixed, fills entire screen)
         if (g_bgTex.id) {
@@ -127,11 +152,10 @@ int main() {
         SpikeManager(gameStartTime);
         DrawUI();
 
+        if (g_shakeDur > 0) { glMatrixMode(GL_PROJECTION); glPopMatrix(); }
+
         glfwSwapBuffers(window);
         glfwPollEvents();
-
-        // 约 60 FPS（后续可改为 glfwSetTime 精确控帧）
-        Sleep(16);
     }
 
     // --- 清理 ---

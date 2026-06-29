@@ -116,7 +116,22 @@ void DrawUI() {
         }
     }
 
-    // YOU DIED 文字暂时跳过（OpenGL 原生不直接支持文字渲染）
+    // Boss HP bar
+    if (boss.active && boss.hp > 0 && boss.alpha > 0.5f) {
+        float barW = 600, barH = 22;
+        float barX = (WINDOW_W - barW) / 2, barY = 15;
+        float ratio = (float)boss.hp / (float)boss.maxHp;
+        if (ratio < 0) ratio = 0; if (ratio > 1) ratio = 1;
+        glSetColor(MakeColor(20,20,20));
+        drawFilledRoundRect(barX, barY, barW, barH, 4);
+        Color hpC = ratio > 0.5f ? MakeColor(50,200,50) : (ratio > 0.25f ? MakeColor(220,200,30) : MakeColor(220,30,30));
+        glSetColor(hpC);
+        drawFilledRoundRect(barX+2, barY+2, (barW-4)*ratio, barH-4, 3);
+        glSetColor(MakeColor(180,180,180)); glSetLineWidth(2);
+        drawLineRoundRect(barX, barY, barW, barH, 4);
+        glSetLineWidth(1);
+    }
+
 }
 
 void DrawSinglePlatform(const Rect& r) {
@@ -188,6 +203,7 @@ void LastSpike() {
         pRect.x += 10; pRect.w -= 20;
         if (pRect.checkCollision(leftSpikeRect) || pRect.checkCollision(rightSpikeRect)) {
             if (pRect.y + pRect.h > PLATFORM_Y - 25) {
+                TriggerScreenShake(6.0f);
                 player.hp--;
                 player.isInvincible = true;
                 player.vy = -8.0f;
@@ -265,7 +281,8 @@ void SpikeManager(DWORD gameStartTime) {
             pRect.x += 10; pRect.w -= 20;
             if (pRect.checkCollision(currentSpikeRect)) {
                 if (pRect.y + pRect.h > PLATFORM_Y - 25) {
-                    player.hp--;
+                    TriggerScreenShake(6.0f);
+                player.hp--;
                     player.isInvincible = true;
                     player.vy = -8.0f;
                 }

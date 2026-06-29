@@ -92,8 +92,8 @@ void Boss::InitHitCache() {
 
 void Boss::update() {
     if (alpha < 1.0f) {
-        alpha += 0.0033f;
-        if (!isPhaseTwoActive) y += 1.0f;
+        alpha += 0.0033f * g_deltaTime * 60.0f;
+        if (!isPhaseTwoActive) y += 1.0f * g_deltaTime * 60.0f;
         return;
     }
     float hoverBaseY = isPhaseTwoActive ? targetY : 200.0f;

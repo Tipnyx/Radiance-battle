@@ -57,6 +57,10 @@ const int DURATION_ACTIVE = 8000;
 extern float cameraX;
 extern float cameraY;
 extern float currentLevelBottom;
+extern float g_deltaTime;
+void TriggerScreenShake(float intensity);
+void UpdateScreenShake(float dt);
+
 
 struct Rect {
     float x, y, w, h;

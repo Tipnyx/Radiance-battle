@@ -14,6 +14,7 @@ void Player::reset() {
     vx = 0; vy = 0;
     hp = 10;
     jumpCount = 0;
+    lastAttackKey = false;
 }
 
 void Player::update() {
@@ -54,8 +55,8 @@ void Player::update() {
 
     if (!isDashing) {
         int inputDir = 0;
-        if (GetAsyncKeyState('A') || GetAsyncKeyState(VK_LEFT)) inputDir = -1;
-        else if (GetAsyncKeyState('D') || GetAsyncKeyState(VK_RIGHT)) inputDir = 1;
+        if (GetAsyncKeyState(VK_LEFT)) inputDir = -1;
+        else if (GetAsyncKeyState(VK_RIGHT)) inputDir = 1;
 
         float t = 0.0f;
         if (MOVE_SPEED > 0) t = sqrt(fabs(vx) / MOVE_SPEED);
@@ -79,7 +80,7 @@ void Player::update() {
         }
         vx = facing * MOVE_SPEED * (t * t);
 
-        bool jumpKey = (GetAsyncKeyState('Z') & 0x8000) != 0;
+        bool jumpKey = (GetAsyncKeyState('A') & 0x8000) != 0;
         if (jumpKey && !lastJumpKey && jumpCount < MAX_JUMP) {
             vy = JUMP_FORCE;
             onGround = false;
@@ -90,7 +91,7 @@ void Player::update() {
 
     if (GetAsyncKeyState('P') & 1) debug_mode = !debug_mode;
 
-    if (GetAsyncKeyState('C')) {
+    if (GetAsyncKeyState('D')) {
         bool canNormal = (currentTime - lastNormalDashTime > NORMAL_DASH_COOLDOWN);
         if (!isDashing && !isAttacking && canNormal && (!hasDashedInAir || onGround)) {
             isDashing = true;
@@ -109,14 +110,16 @@ void Player::update() {
         }
     }
 
-    if ((GetAsyncKeyState('X') || GetAsyncKeyState('J')) && !isAttacking) {
+    bool attackKey = (GetAsyncKeyState('S') & 0x8000) || (GetAsyncKeyState('J') & 0x8000);
+    if (attackKey && !lastAttackKey && !isAttacking) {
         isAttacking = true;
         attackStartTime = currentTime;
         atkTimer = atkDuration;
-        if (GetAsyncKeyState(VK_UP) || GetAsyncKeyState('W')) attackDir = 1;
-        else if (GetAsyncKeyState(VK_DOWN) || GetAsyncKeyState('S')) attackDir = 2;
+        if (GetAsyncKeyState(VK_UP)) attackDir = 1;
+        else if (GetAsyncKeyState(VK_DOWN)) attackDir = 2;
         else attackDir = 0;
     }
+    lastAttackKey = attackKey;
 
     if (isAttacking) {
         atkTimer--;
@@ -132,8 +135,8 @@ void Player::update() {
         }
     }
 
-    if (!isDashing) vy += GRAVITY;
-    x += vx;
+    if (!isDashing) vy += GRAVITY * g_deltaTime * 60.0f;
+    x += vx * g_deltaTime * 60.0f;
 
     Rect pRect = getHitbox();
     for (const auto& wall : platforms) {
@@ -145,7 +148,7 @@ void Player::update() {
         }
     }
 
-    y += vy;
+    y += vy * g_deltaTime * 60.0f;
     onGround = false;
     pRect = getHitbox();
     for (const auto& wall : platforms) {

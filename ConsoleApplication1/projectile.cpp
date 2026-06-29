@@ -64,8 +64,8 @@ void Orb::update(Player& p) {
         vy = (vy / actualSpeed) * MAX_SPEED;
     }
 
-    x += vx;
-    y += vy;
+    x += vx * g_deltaTime * 60.0f;
+    y += vy * g_deltaTime * 60.0f;
 
     if (now - spawnTime > 8000) active = false;
     if (x < -100 || x > WINDOW_W + 100 || y < -5450) active = false;
@@ -161,13 +161,14 @@ void Sword::update(Player& p) {
     if (state == SWORD_PREVIEW && now - spawnTime > 500) state = SWORD_LAUNCH;
     if (state == SWORD_LAUNCH) {
         if (curveRate != 0) {
+            float cr = curveRate * g_deltaTime * 60.0f;
             float oldVx = vx, oldVy = vy;
-            vx = oldVx * cos(curveRate) - oldVy * sin(curveRate);
-            vy = oldVx * sin(curveRate) + oldVy * cos(curveRate);
-            angle += curveRate;
+            vx = oldVx * cos(cr) - oldVy * sin(cr);
+            vy = oldVx * sin(cr) + oldVy * cos(cr);
+            angle += cr;
         }
-        x += vx;
-        y += vy;
+        x += vx * g_deltaTime * 60.0f;
+        y += vy * g_deltaTime * 60.0f;
     }
     if (x < -400 || x > WINDOW_W + 400 || y < -2000 || y > WINDOW_H + 200) active = false;
 }
@@ -258,7 +259,7 @@ Beam::Beam(float startX, float _speed) {
 }
 
 void Beam::update(Player& p) {
-    x += speed;
+    x += speed * g_deltaTime * 60.0f;
     if (x < -200 || x > WINDOW_W + 200) active = false;
 }
 
