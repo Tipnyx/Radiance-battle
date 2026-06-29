@@ -113,15 +113,13 @@ int main() {
         // 渲染
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // Parallax background
+        // Static background (fixed, fills entire screen)
         if (g_bgTex.id) {
-            float px = -(cameraX * 0.3f);
-            float py = -(cameraY * 0.3f);
             float bw = (float)g_bgTex.w, bh = (float)g_bgTex.h;
             float scale = (float)WINDOW_H / bh;
             float sw = bw * scale;
-            for (float tx = px; tx < WINDOW_W + sw; tx += sw)
-                drawTextureRect(tx, py, sw, (float)WINDOW_H, g_bgTex);
+            float px = (WINDOW_W - sw) / 2.0f;
+            drawTextureRect(px, 0, sw, (float)WINDOW_H, g_bgTex);
         }
 
         DrawEntities();

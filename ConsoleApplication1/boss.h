@@ -24,7 +24,7 @@ private:
 
 public:
     float x, y;
-    int hp = 500;
+    int hp = 200;
     bool active = true;
     float alpha = 0;
 
