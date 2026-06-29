@@ -1,0 +1,28 @@
+{
+    "configurations": [
+        {
+            "name": "Windows",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/VS/include",
+                "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.*/include",
+                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.*/um",
+                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.*/shared",
+                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.*/ucrt"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "_CRT_SECURE_NO_WARNINGS"
+            ],
+            "windowsSdkVersion": "10.0.*",
+            "compilerPath": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.*/bin/Hostx64/x64/cl.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-msvc-x64",
+            "compilerArgs": []
+        }
+    ],
+    "version": 4
+}

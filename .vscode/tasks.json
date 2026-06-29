@@ -1,0 +1,42 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build with MSVC",
+            "type": "shell",
+            "command": "cl",
+            "args": [
+                "/EHsc",
+                "/Fe:Radiance.exe",
+                "/I", "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/VS/include",
+                "/I", "${workspaceFolder}/ConsoleApplication1",
+                "${workspaceFolder}/ConsoleApplication1/*.cpp",
+                "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/VS/lib/graphics.lib",
+                "winmm.lib",
+                "user32.lib",
+                "gdi32.lib",
+                "ole32.lib",
+                "oleaut32.lib",
+                "imm32.lib",
+                "uuid.lib"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$msCompile"],
+            "detail": "使用MSVC编译EasyX项目"
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "command": "cmd",
+            "args": [
+                "/c",
+                "del /Q ${workspaceFolder}\\*.exe ${workspaceFolder}\\*.obj ${workspaceFolder}\\*.ilk ${workspaceFolder}\\*.pdb 2>nul"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        }
+    ]
+}
