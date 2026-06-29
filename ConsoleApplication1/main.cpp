@@ -87,6 +87,8 @@ int main() {
     // Load background
     if (!g_bgTex.loadFromFile(L"background.png"))
         g_bgTex.loadFromFile(L"assets/scene/background.png");
+    boss.InitSunCache();
+    boss.InitHitCache();
 
     // --- 音频（保持 Windows MCI，不受 EasyX 影响） ---
     MCIERROR err = mciSendString(L"open \"output.mp3\" type mpegvideo alias bgm", NULL, 0, NULL);

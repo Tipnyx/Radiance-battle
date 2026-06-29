@@ -14,8 +14,81 @@ Boss::Boss() {
     currentState = new PhaseOneState();
 }
 
-void Boss::InitSunCache() {}
-void Boss::InitHitCache() {}
+void Boss::InitSunCache() {
+    const int S = 512;
+    GLuint fbo;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    sunTex.create(S, S);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sunTex.id, 0);
+    glViewport(0, 0, S, S);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, S, S, 0, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    int mid = S / 2;
+    for (int i = 0; i < 90; i++) {
+        glColor3ub(255, (GLubyte)(192 - i > 0 ? 192 - i : 0), (GLubyte)(107 - i > 0 ? 107 - i : 0));
+        glBegin(GL_TRIANGLE_FAN);
+        float rx = (float)(125 - i) / 300.0f * (float)mid;
+        float ry = (float)(125 - i) / 300.0f * (float)mid;
+        glVertex2f((float)mid, (float)mid);
+        for (int j = 0; j <= 36; j++) {
+            float a = j * 2.0f * 3.14159f / 36.0f;
+            glVertex2f((float)mid + cos(a) * rx, (float)mid + sin(a) * ry);
+        }
+        glEnd();
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glDeleteFramebuffers(1, &fbo);
+    glViewport(0, 0, WINDOW_W, WINDOW_H);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, WINDOW_W, WINDOW_H, 0, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+}
+
+void Boss::InitHitCache() {
+    const int S = 512;
+    GLuint fbo;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    hitTex.create(S, S);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hitTex.id, 0);
+    glViewport(0, 0, S, S);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, S, S, 0, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    int mid = S / 2;
+    for (int i = 0; i < 45; i++) {
+        glColor3ub(255, (GLubyte)(255 - 2 * i > 0 ? 255 - 2 * i : 0), (GLubyte)(255 - 2 * i > 0 ? 255 - 2 * i : 0));
+        glBegin(GL_TRIANGLE_FAN);
+        float rx = (float)(125 - i) / 300.0f * (float)mid;
+        float ry = (float)(125 - i) / 300.0f * (float)mid;
+        glVertex2f((float)mid, (float)mid);
+        for (int j = 0; j <= 36; j++) {
+            float a = j * 2.0f * 3.14159f / 36.0f;
+            glVertex2f((float)mid + cos(a) * rx, (float)mid + sin(a) * ry);
+        }
+        glEnd();
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glDeleteFramebuffers(1, &fbo);
+    glViewport(0, 0, WINDOW_W, WINDOW_H);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, WINDOW_W, WINDOW_H, 0, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+}
 
 void Boss::update() {
     if (alpha < 1.0f) {
@@ -58,12 +131,34 @@ void Boss::draw() {
         for (int k = 0; k < 60; k += 10) {
             Color c = Fade(MakeColor(255, 180 - k, 100 - k), trailAlpha);
             glSetColor(c);
-            drawFilledCircle(tx - (int)cameraX, ty - (int)cameraY, (float)(110 - k));
+            drawFilledCircle(tx - (int)cameraX, ty - (int)cameraY, (float)(70 - k));
         }
     }
 
     int cx = (int)x, cy = (int)y;
     int r = 185;
+
+    // Draw cached sun texture as base glow
+    Texture* tex = (boss_is_invincible && hitTex.id) ? &hitTex : &sunTex;
+    if (tex->id) {
+        glEnable(GL_TEXTURE_2D);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        tex->bind();
+        glColor4f(1, 1, 1, 1.0f);
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA); // premultiplied to avoid dark edges
+        float sz = 380.0f;
+        float hsz = sz / 2.0f;
+        glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex2f(cx - cameraX - hsz, cy - cameraY - hsz);
+        glTexCoord2f(1, 0); glVertex2f(cx - cameraX + hsz, cy - cameraY - hsz);
+        glTexCoord2f(1, 1); glVertex2f(cx - cameraX + hsz, cy - cameraY + hsz);
+        glTexCoord2f(0, 1); glVertex2f(cx - cameraX - hsz, cy - cameraY + hsz);
+        glEnd();
+        glDisable(GL_TEXTURE_2D);
+        Texture::unbind();
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // restore default
+    }
 
     for (int j = 0; j < 3; j++) {
         glSetColor(Fade(MakeColor(240, 240, 240), alpha));
@@ -97,15 +192,6 @@ void Boss::draw() {
         drawFilledPolygon(pts, 3);
     }
     glSetLineWidth(1);
-
-    if (boss.boss_is_invincible) {
-        glSetColor(Fade(MakeColor(255, 100, 100), 0.5f));
-        drawFilledCircle((float)(cx - (int)cameraX), (float)(cy - (int)cameraY), 130.0f);
-    }
-    else {
-        glSetColor(Fade(MakeColor(255, 240, 180), alpha * 0.3f));
-        drawFilledCircle((float)(cx - (int)cameraX), (float)(cy - (int)cameraY), 130.0f);
-    }
 
     glSetColor(Fade(MakeColor(255, 200, 17), alpha));
     glSetLineWidth(3);
