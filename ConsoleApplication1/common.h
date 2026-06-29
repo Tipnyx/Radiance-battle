@@ -1,6 +1,8 @@
 #pragma once
 #define NOMINMAX
 #include <windows.h>
+#include <gdiplus.h>
+#pragma comment(lib, "gdiplus.lib")
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <vector>
@@ -230,6 +232,22 @@ struct Texture {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    }
+
+    bool loadFromFile(const wchar_t* path) {
+        Gdiplus::Bitmap bmp(path);
+        if (bmp.GetLastStatus() != Gdiplus::Ok) return false;
+        w = bmp.GetWidth(); h = bmp.GetHeight();
+        Gdiplus::Rect grect(0, 0, w, h);
+        Gdiplus::BitmapData bmpData;
+        bmp.LockBits(&grect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, &bmpData);
+        glGenTextures(1, &id);
+        glBindTexture(GL_TEXTURE_2D, id);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, bmpData.Scan0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        bmp.UnlockBits(&bmpData);
+        return true;
     }
 
     void bind() const { glBindTexture(GL_TEXTURE_2D, id); }

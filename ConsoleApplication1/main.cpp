@@ -33,8 +33,9 @@ float cameraX = 0;
 float cameraY = 0;
 float currentLevelBottom = WINDOW_H;
 
-// GLFW 窗口指针（全局，供回调使用）
 GLFWwindow* window = nullptr;
+Texture g_bgTex;
+ULONG_PTR g_gdiplusToken = 0;
 
 // --- OpenGL 初始化 ---
 void InitOpenGL() {
@@ -55,6 +56,10 @@ void InitOpenGL() {
 }
 
 int main() {
+    // GDI+ init
+    Gdiplus::GdiplusStartupInput gdiSI;
+    Gdiplus::GdiplusStartup(&g_gdiplusToken, &gdiSI, NULL);
+
     // --- 初始化 GLFW ---
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
@@ -79,6 +84,10 @@ int main() {
 
     InitOpenGL();
 
+    // Load background
+    if (!g_bgTex.loadFromFile(L"background.png"))
+        g_bgTex.loadFromFile(L"assets/scene/background.png");
+
     // --- 音频（保持 Windows MCI，不受 EasyX 影响） ---
     MCIERROR err = mciSendString(L"open \"output.mp3\" type mpegvideo alias bgm", NULL, 0, NULL);
     if (err != 0) {
@@ -102,6 +111,17 @@ int main() {
         // 渲染
         glClear(GL_COLOR_BUFFER_BIT);
 
+        // Parallax background
+        if (g_bgTex.id) {
+            float px = -(cameraX * 0.3f);
+            float py = -(cameraY * 0.3f);
+            float bw = (float)g_bgTex.w, bh = (float)g_bgTex.h;
+            float scale = (float)WINDOW_H / bh;
+            float sw = bw * scale;
+            for (float tx = px; tx < WINDOW_W + sw; tx += sw)
+                drawTextureRect(tx, py, sw, (float)WINDOW_H, g_bgTex);
+        }
+
         DrawEntities();
         DrawPlatform();
         SpikeManager(gameStartTime);
@@ -116,6 +136,7 @@ int main() {
 
     // --- 清理 ---
     mciSendString(L"close bgm", NULL, 0, NULL);
+    Gdiplus::GdiplusShutdown(g_gdiplusToken);
     glfwTerminate();
     return 0;
 }
